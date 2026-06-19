@@ -3,7 +3,7 @@ import { GlowBg } from '@/components/shared/ui/glow-bg';
 import React, { Children, cloneElement, ReactElement } from 'react';
 import { LandingPriceComparisonColumn } from '@/components/landing/pricing-comparison/LandingPriceComparisonColumn';
 
-type Child = ReactElement<any, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+type Child = ReactElement<any, any>;
 
 /**
  * A component meant to be used in the landing page.

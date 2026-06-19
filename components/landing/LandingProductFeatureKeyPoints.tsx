@@ -2,7 +2,7 @@ import { clsx } from 'clsx';
 import { ReactElement } from 'react';
 import { CheckIcon, LucideIcon } from 'lucide-react';
 
-type Child = ReactElement<any, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+type Child = ReactElement<any, any>;
 
 export interface KeyPoint {
   title: string;
