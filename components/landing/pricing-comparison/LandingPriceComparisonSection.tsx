@@ -3,7 +3,7 @@ import { GlowBg } from '@/components/shared/ui/glow-bg';
 import React, { Children, cloneElement, ReactElement } from 'react';
 import { LandingPriceComparisonColumn } from '@/components/landing/pricing-comparison/LandingPriceComparisonColumn';
 
-type Child = ReactElement<any, any>;
+type Child = ReactElement<any, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 
 /**
  * A component meant to be used in the landing page.
@@ -95,15 +95,15 @@ export const LandingPriceComparisonSection = ({
               : 'items-start',
           )}
         >
-          {titleComponent || (title && (
-            <h2 className="text-2xl md:text-3xl lg:text-4xl font-semibold leading-tight">
-              {title}
-            </h2>
-          ))}
+          {titleComponent ||
+            (title && (
+              <h2 className="text-2xl md:text-3xl lg:text-4xl font-semibold leading-tight">
+                {title}
+              </h2>
+            ))}
 
-          {descriptionComponent || (description && (
-            <p className="md:text-lg -mt-3">{description}</p>
-          ))}
+          {descriptionComponent ||
+            (description && <p className="md:text-lg -mt-3">{description}</p>)}
         </div>
 
         <div
