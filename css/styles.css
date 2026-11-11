@@ -427,3 +427,7 @@ a.sec-card:hover { transform: translateY(-8px); box-shadow: var(--shadow); borde
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
   .reveal { opacity: 1; transform: none; }
 }
+
+/* телефондағы жүйелік жолақтар */
+.nav { padding-top: calc(18px + env(safe-area-inset-top, 0px)); }
+body.scrolled .nav, body:not([data-page='home']) .nav { padding-top: calc(12px + env(safe-area-inset-top, 0px)); }

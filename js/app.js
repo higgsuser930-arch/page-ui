@@ -508,7 +508,7 @@
   }
 
   /* ---------- ортақ бөліктер ---------- */
-  const logo = () => el('a.logo', { href: '#/' }, el('span.mark', {}, 'P'), el('span', { html: 'Premium <em>Clinic</em>' }));
+  const logo = () => el('a.logo', { href: '#home' }, el('span.mark', {}, 'P'), el('span', { html: 'Premium <em>Clinic</em>' }));
 
   function nav(crumbs) {
     return el('header.nav', {}, el('div.wrap', {},
@@ -516,7 +516,7 @@
       crumbs
         ? el('nav.crumbs', {}, crumbs.map(([t, href]) => (href ? el('a', { href }, t) : el('span', {}, t))))
         : el('nav.links', {}, el('a', { href: '#sounds' , 'data-scroll': 'sounds' }, 'Дыбыстар'), el('a', { href: '#stages', 'data-scroll': 'stages' }, 'Кезеңдер'), el('a', { href: '#trust', 'data-scroll': 'trust' }, 'Артықшылықтар')),
-      el('a.btn.gold.sm', { href: crumbs ? '#/' : '#sounds', 'data-scroll': crumbs ? null : 'sounds' }, crumbs ? 'Басты бет' : 'Сабақты бастау')));
+      el('a.btn.gold.sm', { href: crumbs ? '#home' : '#sounds', 'data-scroll': crumbs ? null : 'sounds' }, crumbs ? 'Басты бет' : 'Сабақты бастау')));
   }
 
   const footer = () => el('footer.footer', {}, el('div.wrap', {}, logo(),
@@ -560,7 +560,7 @@
         el('p', {}, 'Әріпті басыңыз — сол дыбыс бойынша төрт кезең ашылады.')),
       el('div.letters', {}, SOUNDS.map((s, i) => {
         const pct = soundPct(s);
-        return el('a.letter-card.reveal', { href: `#/s/${s.id}`, style: `--d:${i * 70}ms;--p:${pct}`, 'data-sound': s.id },
+        return el('a.letter-card.reveal', { href: `#s-${s.id}`, style: `--d:${i * 70}ms;--p:${pct}`, 'data-sound': s.id },
           el('span.glyph', {}, s.L), el('span.lc-word', {}, s.word),
           el('span.lc-meta', {}, el('i.bar', {}, el('b')), el('em', {}, pct ? `${pct}%` : 'Бастау →')));
       }))));
@@ -600,7 +600,7 @@
         el('h1', { html: `<em>${s.L}</em> дыбысы` }),
         el('p.lead', {}, 'Төрт кезең, он екі ойын бөлімі. Ойындар ретімен ашылады.'),
         el('div.sh-progress', {}, el('i.bar', { style: `--p:${pct}` }, el('b')), el('span', {}, `${pct}% аяқталды`)),
-        el('div.sound-switch', {}, SOUNDS.map((x) => el('a' + (x.id === s.id ? '.on' : ''), { href: `#/s/${x.id}` }, x.L))))));
+        el('div.sound-switch', {}, SOUNDS.map((x) => el('a' + (x.id === s.id ? '.on' : ''), { href: `#s-${x.id}` }, x.L))))));
 
     const body = el('section.section', {}, el('div.wrap', {},
       STAGES.map((st) => el('div.stage-block.reveal', {},
@@ -609,7 +609,7 @@
           if (sec.stage !== st.n) return null;
           const done = secDone(s, sec.id), open = secOpen(s, idx);
           const tabs = tabsFor(s, sec.id), dn = tabs.filter((_, i) => tabDone(s, sec.id, i)).length;
-          return el(open ? 'a.sec-card' : 'div.sec-card.locked', { href: open ? `#/s/${s.id}/${sec.id}` : null, 'data-sec': sec.id, 'data-state': done ? 'done' : open ? 'open' : 'locked' },
+          return el(open ? 'a.sec-card' : 'div.sec-card.locked', { href: open ? `#s-${s.id}-${sec.id.replace('.', '-')}` : null, 'data-sec': sec.id, 'data-state': done ? 'done' : open ? 'open' : 'locked' },
             el('span.sc-icon', {}, open ? sec.i : '🔒'),
             el('span.sc-id', {}, sec.id), el('h3', {}, secTitle(s, sec)), el('p', {}, sec.k),
             el('span.sc-foot', {}, done ? '✓ Аяқталды' : open ? (dn ? `${dn}/${tabs.length} орындалды` : 'Ойнау →') : 'Алдыңғы ойыннан кейін ашылады'));
@@ -620,7 +620,7 @@
         return c;
       })(), el('span', {}, 'Барлық ойынды ашу (логопедке арналған режим)'))));
 
-    return [nav([['Дыбыстар', '#/'], [`${s.L} дыбысы`]]), el('main', {}, head, body), footer()];
+    return [nav([['Дыбыстар', '#home'], [`${s.L} дыбысы`]]), el('main', {}, head, body), footer()];
   }
 
   function pageGame(s, sec) {
@@ -636,8 +636,8 @@
       stage.append(el('div.win.pop', {}, el('span.win-ic', {}, '★'), el('h2', {}, 'Керемет! Ойын аяқталды'),
         el('p', {}, nextSec ? `Келесі ойын ашылды: ${nextSec.id} «${secTitle(s, nextSec)}»` : `${s.L} дыбысы бойынша бағдарлама толық аяқталды!`),
         el('div.win-cta', {},
-          nextSec ? el('a.btn.gold.lg', { href: `#/s/${s.id}/${nextSec.id}` }, 'Келесі ойын →') : el('a.btn.gold.lg', { href: '#/' }, 'Басқа дыбысты таңдау'),
-          el('a.btn.line.lg', { href: `#/s/${s.id}` }, 'Кезеңдерге оралу'))));
+          nextSec ? el('a.btn.gold.lg', { href: `#s-${s.id}-${nextSec.id.replace('.', '-')}` }, 'Келесі ойын →') : el('a.btn.gold.lg', { href: '#home' }, 'Басқа дыбысты таңдау'),
+          el('a.btn.line.lg', { href: `#s-${s.id}` }, 'Кезеңдерге оралу'))));
     };
     const show = (i) => {
       cleanup(); cur = i;
@@ -658,25 +658,25 @@
     };
     show(cur);
 
-    return [nav([['Дыбыстар', '#/'], [`${s.L} дыбысы`, `#/s/${s.id}`], [sec.id]]),
+    return [nav([['Дыбыстар', '#home'], [`${s.L} дыбысы`, `#s-${s.id}`], [sec.id]]),
       el('main.game', {}, el('div.wrap', {},
         el('header.game-head', {},
           el('div', {}, el('span.eyebrow', {}, `${st.n}-кезең · ${st.t}`), el('h1', {}, el('span.gh-id', {}, sec.id), ` «${secTitle(s, sec)}»`)),
           el('div.gh-letter', {}, s.L)),
         board,
         el('div.game-nav', {},
-          idx > 0 ? el('a.btn.line', { href: `#/s/${s.id}/${SECTIONS[idx - 1].id}` }, '← Алдыңғы') : el('span'),
-          el('a.btn.line', { href: `#/s/${s.id}` }, 'Барлық ойын'))))];
+          idx > 0 ? el('a.btn.line', { href: `#s-${s.id}-${SECTIONS[idx - 1].id.replace('.', '-')}` }, '← Алдыңғы') : el('span'),
+          el('a.btn.line', { href: `#s-${s.id}` }, 'Барлық ойын'))))];
   }
 
   /* ---------- маршрут ---------- */
   function render() {
     cleanup();
-    const m = location.hash.match(/^#\/s\/([a-z]+)(?:\/(\d\.\d))?/);
+    const m = location.hash.match(/^#s-([a-z]+)(?:-(\d)-(\d))?$/);
     const s = m && SOUNDS.find((x) => x.id === m[1]);
-    const sec = s && m[2] && SECTIONS.find((x) => x.id === m[2]);
+    const sec = s && m[2] && SECTIONS.find((x) => x.id === `${m[2]}.${m[3]}`);
     let view;
-    if (sec && !secOpen(s, SECTIONS.indexOf(sec))) { location.replace(`#/s/${s.id}`); return; }
+    if (sec && !secOpen(s, SECTIONS.indexOf(sec))) { location.replace(`#s-${s.id}`); return; }
     if (sec) view = pageGame(s, sec); else if (s) view = pageSound(s); else view = pageHome();
     document.body.dataset.page = sec ? 'game' : s ? 'sound' : 'home';
     document.title = (s ? `${s.L} дыбысы — ` : '') + 'Premium Clinic · Логопедиялық орталық';
