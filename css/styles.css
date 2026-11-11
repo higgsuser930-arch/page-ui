@@ -106,7 +106,7 @@ body.scrolled .nav .mark { background: var(--ink); }
 .float-letters span:nth-child(3) { right: 12%; top: 62%; } .float-letters span:nth-child(4) { right: 36%; top: 12%; }
 .float-letters span:nth-child(5) { right: 40%; top: 66%; } .float-letters span:nth-child(6) { right: 2%; top: 40%; }
 .float-letters span:nth-child(7) { right: 22%; top: 4%; }
-.has-img .float-letters { opacity: 0.35; }
+.has-img .float-letters { opacity: 0; transition: opacity 1s; }
 @keyframes floaty { from { transform: translateY(-14px) rotate(-3deg); } to { transform: translateY(18px) rotate(4deg); } }
 .scroll-cue { position: absolute; left: 50%; bottom: 28px; z-index: 2; width: 26px; height: 42px; margin-left: -13px; border: 1.5px solid rgba(255, 255, 255, 0.5); border-radius: 14px; }
 .scroll-cue i { position: absolute; left: 50%; top: 8px; width: 4px; height: 8px; margin-left: -2px; border-radius: 2px; background: var(--gold-2); animation: cue 1.8s ease-in-out infinite; }
@@ -431,3 +431,12 @@ a.sec-card:hover { transform: translateY(-8px); box-shadow: var(--shadow); borde
 /* телефондағы жүйелік жолақтар */
 .nav { padding-top: calc(18px + env(safe-area-inset-top, 0px)); }
 body.scrolled .nav, body:not([data-page='home']) .nav { padding-top: calc(12px + env(safe-area-inset-top, 0px)); }
+
+/* фото үстіндегі жазулар оқылуы үшін */
+.stage-photo.has-img::after { content: ''; position: absolute; inset: 0; z-index: 1; background: linear-gradient(0deg, rgba(8, 32, 32, 0.7), transparent 45%); }
+.hero-photo.has-img::before { background-position: 70% center; }
+@media (max-width: 860px) {
+  .hero-photo.has-img::after { background: linear-gradient(0deg, rgba(8, 32, 32, 0.95) 0%, rgba(8, 32, 32, 0.78) 55%, rgba(8, 32, 32, 0.45) 100%); }
+}
+.logo { white-space: nowrap; }
+@media (max-width: 420px) { .nav .btn.sm { padding: 9px 14px; font-size: 0.85rem; } }

@@ -527,8 +527,9 @@
   function photo(name, cls, inner) {
     const p = el('div.photo.' + cls, {}, el('div.photo-art', {}, el('i'), el('i'), el('i')), inner);
     const img = new Image();
-    img.onload = () => { p.style.setProperty('--img', `url(images/${name})`); p.classList.add('has-img'); };
-    img.src = `images/${name}`;
+    const src = (window.PC_IMG && window.PC_IMG[name]) || new URL(`images/${name}`, document.baseURI).href;
+    img.onload = () => { p.style.setProperty('--img', `url("${src}")`); p.classList.add('has-img'); };
+    img.src = src;
     return p;
   }
 
