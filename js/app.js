@@ -74,6 +74,19 @@
   }
   const sfx = { ok: () => tone([660, 880]), bad: () => tone([220], 0.18), win: () => tone([523, 659, 784, 1047], 0.13) };
 
+  /* сөздердің дауыстық жазбалары */
+  const AUDIO = window.PC_AUDIO || {};
+  let voice;
+  function speak(w, delay) {
+    const src = AUDIO[String(w).toLowerCase()];
+    if (!src) return false;
+    const go = () => { try { if (voice) voice.pause(); voice = new Audio(src); voice.play().catch(() => {}); } catch (e) {} };
+    if (delay) later(go, delay); else go();
+    return true;
+  }
+  const listenBtn = (w) => (AUDIO[String(w).toLowerCase()]
+    ? el('button.listen', { type: 'button', 'aria-label': 'Сөзді тыңдау', onclick: () => speak(w) }, '🔊 Тыңдау') : null);
+
   function shake(n) { n.classList.remove('shake'); void n.offsetWidth; n.classList.add('shake'); sfx.bad(); }
 
   /* ---------- раундтар ---------- */
@@ -132,7 +145,7 @@
     yesno(host, lv, s, done) {
       rounds(host, shuffle(lv.w), (w, st, next) => {
         const card = wordCard(w);
-        st.append(el('p.hint', {}, `Бұл сөзде ${s.L} дыбысы бар ма?`), card);
+        st.append(el('p.hint', {}, `Бұл сөзде ${s.L} дыбысы бар ма?`), card, listenBtn(w)); speak(w, 350);
         choices(st, [
           { label: '✓ Бар', ok: has(w, s.L), cls: 'yes' },
           { label: '✕ Жоқ', ok: !has(w, s.L), cls: 'no' },
@@ -155,7 +168,7 @@
           });
           row.append(b);
         });
-        st.append(row);
+        st.append(row, listenBtn(w)); speak(w, 350);
       }, done);
     },
     pos(host, lv, s, done) {
@@ -164,7 +177,7 @@
         const set = new Set();
         [...w.toLowerCase()].forEach((c, i, a) => { if (c === s.L.toLowerCase()) set.add(i === 0 ? 'start' : i === a.length - 1 ? 'end' : 'mid'); });
         const card = wordCard(w);
-        st.append(el('p.hint', {}, `${s.L} дыбысы сөздің қай жерінде?`), card);
+        st.append(el('p.hint', {}, `${s.L} дыбысы сөздің қай жерінде?`), card, listenBtn(w)); speak(w, 350);
         choices(st, P.map(([k, label]) => ({ label, ok: set.has(k) })), next, { onOk: () => card.replaceWith(wordCard(w, s.L)) });
       }, done);
     },
@@ -178,7 +191,7 @@
       const items = shuffle([...lv.wa.map((w) => [w, 'a']), ...lv.wb.map((w) => [w, 'b'])]);
       const bins = { a: el('div.bin-list'), b: el('div.bin-list') };
       rounds(host, items, ([w, g], st, next) => {
-        st.append(el('p.hint', {}, 'Сөзді тыңдап, дұрыс себетке сал'), wordCard(w));
+        st.append(el('p.hint', {}, 'Сөзді тыңдап, дұрыс себетке сал'), wordCard(w), listenBtn(w)); speak(w, 350);
         choices(st, [{ label: lv.a, ok: g === 'a', cls: 'letter' }, { label: lv.b, ok: g === 'b', cls: 'letter' }], next, {
           onOk: () => bins[g].append(el('span.chip.pop', {}, w)),
         });
@@ -208,7 +221,7 @@
         st.append(el('p.hint', {}, 'Қай әріп түсіп қалды? Тауып, сөзді толық айт.'), word);
         const opts = shuffle([s.L.toLowerCase(), ...shuffle(pool).slice(0, 3)]);
         choices(st, opts.map((c) => ({ label: c, ok: c === s.L.toLowerCase(), cls: 'letter' })), next, {
-          onOk: () => { const b = word.querySelector('.blank'); b.textContent = s.L.toLowerCase(); b.classList.add('filled'); },
+          onOk: () => { const b = word.querySelector('.blank'); b.textContent = s.L.toLowerCase(); b.classList.add('filled'); speak(w.replace('_', s.L), 300); },
         });
       }, done);
     },
@@ -247,7 +260,7 @@
       ok._ok = true;
       box.addEventListener('click', () => {
         if (box.classList.contains('open')) return;
-        box.classList.add('open'); sfx.ok();
+        box.classList.add('open'); sfx.ok(); speak(w, 400);
         name.classList.remove('hidden'); ok.classList.remove('hidden');
       });
       ok.addEventListener('click', () => { ok.disabled = true; next(); });
@@ -295,7 +308,8 @@
           const b = el('button.btn.gold', { type: 'button' }, 'Келесі →');
           b._ok = true;
           b.addEventListener('click', () => { b.disabled = true; go(); });
-          st.append(el('p.task.pop', { html: `Дұрыс! Енді <b>«${good}»</b> сөзін қайталап, осы сөзбен сөйлем құра.` }), b);
+          speak(good, 300);
+          st.append(el('p.task.pop', { html: `Дұрыс! Енді <b>«${good}»</b> сөзін қайталап, осы сөзбен сөйлем құра.` }), listenBtn(good), b);
         },
       });
     }, done);

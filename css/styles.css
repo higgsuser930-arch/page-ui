@@ -440,3 +440,8 @@ body.scrolled .nav, body:not([data-page='home']) .nav { padding-top: calc(12px +
 }
 .logo { white-space: nowrap; }
 @media (max-width: 420px) { .nav .btn.sm { padding: 9px 14px; font-size: 0.85rem; } }
+
+/* сөзді тыңдау */
+.listen { display: inline-flex; align-items: center; gap: 8px; padding: 9px 18px; border-radius: 999px; background: var(--sand); font-weight: 600; font-size: 0.94rem; color: var(--teal); transition: transform 0.3s var(--ease), background 0.3s; }
+.listen:hover { transform: translateY(-2px); background: var(--gold-2); }
+.listen:active { transform: scale(0.96); }
