@@ -38,7 +38,7 @@
 
   let cleanups = [];
   const onCleanup = (fn) => cleanups.push(fn);
-  const cleanup = () => { cleanups.forEach((f) => { try { f(); } catch (e) {} }); cleanups = []; };
+  const cleanup = () => { stopVoice(); cleanups.forEach((f) => { try { f(); } catch (e) {} }); cleanups = []; };
   const later = (fn, ms) => { const id = setTimeout(fn, T(ms)); onCleanup(() => clearTimeout(id)); return id; };
 
   /* ---------- прогресс ---------- */
@@ -74,18 +74,85 @@
   }
   const sfx = { ok: () => tone([660, 880]), bad: () => tone([220], 0.18), win: () => tone([523, 659, 784, 1047], 0.13) };
 
-  /* сөздердің дауыстық жазбалары */
+  /* ---------- дауыстық жазбалар ---------- */
+  // Кілттер: сөз/буын — кіші әріппен, жеке дыбыс — «дыбыс:Р», түсіндірме — толық мәтін.
   const AUDIO = window.PC_AUDIO || {};
-  let voice;
-  function speak(w, delay) {
-    const src = AUDIO[String(w).toLowerCase()];
-    if (!src) return false;
-    const go = () => { try { if (voice) voice.pause(); voice = new Audio(src); voice.play().catch(() => {}); } catch (e) {} };
+  const src = (k) => AUDIO[k] || AUDIO[String(k).toLowerCase()];
+  const sndKey = (L) => 'дыбыс:' + L;
+  let voice = null, pending = null;
+  function playNow(k) {
+    const u = src(k);
+    pending = null;
+    if (!u) return false;
+    try {
+      if (voice) { voice.onended = null; voice.pause(); }
+      voice = new Audio(u);
+      voice.onended = () => { voice = null; if (pending) { const n = pending; pending = null; playNow(n); } };
+      voice.play().catch(() => { voice = null; });
+    } catch (e) { voice = null; }
+    return true;
+  }
+  // Автоматты ойнату: түсіндірме оқылып жатса, оны үзбей, кезекке қояды
+  function speak(k, delay) {
+    if (!src(k)) return false;
+    const go = () => { if (voice && !voice.ended && !voice.paused) pending = k; else playNow(k); };
     if (delay) later(go, delay); else go();
     return true;
   }
-  const listenBtn = (w) => (AUDIO[String(w).toLowerCase()]
-    ? el('button.listen', { type: 'button', 'aria-label': 'Сөзді тыңдау', onclick: () => speak(w) }, '🔊 Тыңдау') : null);
+  function stopVoice() { pending = null; if (voice) { try { voice.onended = null; voice.pause(); } catch (e) {} voice = null; } }
+  const listenBtn = (k, label) => (src(k)
+    ? el('button.listen', { type: 'button', onclick: () => playNow(k) }, '🔊 ' + (label || 'Тыңдау')) : null);
+
+  /* баланың өз дауысын жазып, қайта тыңдауы */
+  function recorder(label, onDone, maxMs = 7000) {
+    const btn = el('button.btn.rec-btn', { type: 'button' }, '🎤 ' + label);
+    const play = el('button.listen.hidden', { type: 'button' }, '▶ Өз дауысыңды тыңда');
+    const note = el('p.hint.hidden');
+    let mr = null, chunks = [], stream = null, url = null, timer = 0;
+    const stop = () => { if (mr && mr.state === 'recording') mr.stop(); };
+    const fail = () => {
+      note.textContent = 'Микрофон қолжетімсіз. Дауыстап айт та, жалғастыра бер.';
+      note.classList.remove('hidden');
+      if (onDone) onDone(false);
+    };
+    btn.addEventListener('click', async () => {
+      if (mr && mr.state === 'recording') return stop();
+      if (!navigator.mediaDevices || !window.MediaRecorder) return fail();
+      try {
+        stopVoice();
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        chunks = []; mr = new MediaRecorder(stream);
+        mr.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+        mr.onstop = () => {
+          clearTimeout(timer); stream.getTracks().forEach((t) => t.stop());
+          if (url) URL.revokeObjectURL(url);
+          url = URL.createObjectURL(new Blob(chunks, { type: mr.mimeType }));
+          btn.classList.remove('on'); btn.textContent = '🎤 Қайта айтып көр';
+          play.classList.remove('hidden');
+          new Audio(url).play().catch(() => {});
+          if (onDone) onDone(true);
+        };
+        mr.start(); btn.classList.add('on'); btn.textContent = '⏹ Айтып болдым';
+        timer = setTimeout(stop, maxMs);
+      } catch (e) { fail(); }
+    });
+    play.addEventListener('click', () => { if (url) new Audio(url).play().catch(() => {}); });
+    onCleanup(() => { clearTimeout(timer); try { if (mr && mr.state === 'recording') { mr.onstop = null; mr.stop(); } if (stream) stream.getTracks().forEach((t) => t.stop()); } catch (e) {} });
+    return el('div.rec', {}, btn, play, note);
+  }
+
+  /* YouTube бейне үлгісі: басқанда ғана жүктеледі */
+  function videoCard(id) {
+    const box = el('div.video');
+    const open = el('button.video-open', { type: 'button' }, el('span.video-play', {}, '▶'), el('span', {}, 'Бейне үлгіні көру'));
+    open.addEventListener('click', () => {
+      stopVoice();
+      box.innerHTML = '';
+      box.append(el('iframe', { src: `https://www.youtube-nocookie.com/embed/${id}?rel=0&autoplay=1`, title: 'Бейне үлгі', allow: 'accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture', allowfullscreen: true, loading: 'lazy' }));
+    });
+    box.append(open);
+    return el('div.video-wrap', {}, box, el('a.video-link', { href: `https://youtu.be/${id}`, target: '_blank', rel: 'noopener' }, 'YouTube-та ашу ↗'));
+  }
 
   function shake(n) { n.classList.remove('shake'); void n.offsetWidth; n.classList.add('shake'); sfx.bad(); }
 
@@ -124,12 +191,14 @@
 
   const wordCard = (w, L) => el('div.wordcard', { html: [...w].map((c) => (L && c.toLowerCase() === L.toLowerCase() ? `<b>${c}</b>` : c)).join('') });
 
+  const letterBtn = (x, cls = '') => el('button.bigletter' + cls, { type: 'button', 'aria-label': `${x} дыбысын тыңдау`, onclick: () => playNow(sndKey(x)) }, x);
+
   /* ---------- деңгей режимдері ---------- */
   const MODES = {
     seq(host, lv, s, done) {
       const target = s.L;
       rounds(host, lv.seq, (x, st, next) => {
-        st.append(el('p.hint', {}, 'Логопед дыбысты айтады — экранда әріп шығады'), el('div.bigletter', {}, x));
+        st.append(el('p.hint', {}, src(sndKey(x)) ? 'Дыбысты тыңда. Әріпті бассаң, дыбыс қайта айтылады.' : 'Логопед дыбысты айтады — экранда әріп шығады'), letterBtn(x)); speak(sndKey(x), 350);
         choices(st, [
           { label: '👏 Белгі беру', ok: x === target, cls: 'primary' },
           { label: 'Өткізіп жіберу →', ok: x !== target },
@@ -138,7 +207,7 @@
     },
     ab(host, lv, s, done) {
       rounds(host, lv.seq, (x, st, next) => {
-        st.append(el('p.hint', {}, 'Қай дыбыс айтылды?'), el('div.bigletter', {}, x));
+        st.append(el('p.hint', {}, 'Қай дыбыс айтылды? Әріпті бассаң, дыбыс қайта айтылады.'), letterBtn(x)); speak(sndKey(x), 350);
         choices(st, lv.opts.map((o) => ({ label: o, ok: o === x, cls: 'letter' })), next);
       }, done);
     },
@@ -199,16 +268,17 @@
       host.append(el('div.bins', {}, el('div.bin', {}, el('strong', {}, lv.a), bins.a), el('div.bin', {}, el('strong', {}, lv.b), bins.b)));
     },
     say(host, lv, s, done) {
-      host.append(el('p.hint', {}, 'Логопедтің үлгісі бойынша анық айт. Айтқан соң картаны бас.'));
+      host.append(el('p.hint', {}, 'Буынды бас — дыбысы шығады. Тыңдап алып, өзің анық қайтала.'));
       const grid = el('div.saygrid');
       let left = lv.w.length;
       lv.w.forEach((w, i) => {
         const b = el('button.saycard', { type: 'button', style: `--d:${i * 70}ms` }, w);
         b._ok = true;
         b.addEventListener('click', () => {
+          if (!playNow(w)) sfx.ok();
           if (b.classList.contains('ok')) return;
-          b.classList.add('ok'); sfx.ok();
-          if (--left === 0) later(done, 500);
+          b.classList.add('ok');
+          if (--left === 0) later(done, 1200);
         });
         grid.append(b);
       });
@@ -232,21 +302,24 @@
     let step = 0;
     const rocket = el('div.rocket', {}, el('span', {}, '🚀'));
     const sky = el('div.sky', {}, el('div.stars'), el('div.planet', {}, '🪐'), el('div.track'), rocket, el('div.ground'));
-    const txt = el('p.rocket-step');
+    const txt = el('p.rocket-step'), stepListen = el('div.step-listen');
     const btn = el('button.btn.gold', { type: 'button' }, 'Дұрыс айтылды ✓');
     btn._ok = true;
     const draw = () => {
       rocket.style.setProperty('--h', step / 3);
       sky.dataset.step = step;
       txt.innerHTML = step < 3 ? `<b>${ROMAN[step]} деңгей.</b> ${s.rocket[step]}` : 'Зымыран ғарышқа жетті!';
+      stepListen.innerHTML = '';
+      if (step < 3) { const b = listenBtn(s.rocket[step], 'Тапсырманы тыңдау'); if (b) stepListen.append(b); speak(s.rocket[step], 300); }
     };
     btn.addEventListener('click', () => {
       if (step >= 3) return;
       step++; sfx.ok(); draw();
       if (step === 3) { btn.disabled = true; later(done, 1400); }
     });
-    host.append(el('div.rocket-wrap', {}, sky, el('div.rocket-side', {}, el('div.bigletter.sm', {}, s.L), txt, btn,
-      el('p.hint', {}, 'Бала дыбысты дұрыс айтқан сайын батырманы басыңыз — зымыран жоғары көтеріледі.'))));
+    host.append(el('div.rocket-wrap', {}, sky, el('div.rocket-side', {}, letterBtn(s.L, '.sm'), txt, stepListen,
+      recorder('Қанекей, сен айтып көр'), btn,
+      el('p.hint', {}, 'Әріпті басып дыбысты тыңда. Өзің айтып көр, дұрыс айтылған сайын батырманы бас — зымыран жоғары көтеріледі.'))));
     draw();
   }
 
@@ -258,13 +331,14 @@
       const name = el('div.wordcard.hidden', { html: wordCard(w, s.L).innerHTML });
       const ok = el('button.btn.gold.hidden', { type: 'button' }, 'Айттым ✓');
       ok._ok = true;
+      const extra = el('div.say-tools.hidden', {}, listenBtn(w), recorder('Қанекей, сен айтып көр'));
       box.addEventListener('click', () => {
         if (box.classList.contains('open')) return;
         box.classList.add('open'); sfx.ok(); speak(w, 400);
-        name.classList.remove('hidden'); ok.classList.remove('hidden');
+        name.classList.remove('hidden'); extra.classList.remove('hidden'); ok.classList.remove('hidden');
       });
       ok.addEventListener('click', () => { ok.disabled = true; next(); });
-      st.append(el('p.hint', {}, `Қорапты аш. Суретті атап, ${s.L} дыбысын дұрыс айт.`), box, name, ok);
+      st.append(el('p.hint', {}, `Қорапты аш. Суретті атап, ${s.L} дыбысын дұрыс айт.`), box, name, extra, ok);
     }, done);
   }
 
@@ -278,7 +352,7 @@
         const placed = [...line.children].map((c) => c.textContent);
         if (placed.length < words.length) return;
         if (placed.join(' ').toLowerCase() === target) {
-          line.classList.add('ok'); line.innerHTML = ''; line.append(el('span.sentence', {}, answer + '.'));
+          line.classList.add('ok'); line.innerHTML = ''; line.append(el('span.sentence', {}, answer + '.'), listenBtn(answer)); speak(answer, 700);
           sfx.ok(); next();
         } else {
           shake(line);
@@ -291,12 +365,13 @@
         c._w = w.toLowerCase();
         c.addEventListener('click', () => {
           if (line.classList.contains('ok')) return;
+          playNow(w);
           (c.parentNode === bank ? line : bank).append(c); check();
         });
         bank.append(c);
       });
       st._solve = () => order.forEach((w) => [...bank.children].find((c) => c._w === w.toLowerCase())?.click());
-      st.append(el('p.hint', {}, 'Сөздерді дұрыс ретпен басып, сөйлем құра. Сосын сөйлемді анық айт.'), line, bank);
+      st.append(el('p.hint', {}, 'Сөздерді басып тыңда да, дұрыс ретпен қойып сөйлем құра. Сосын сөйлемді анық айт.'), line, bank);
     }, done);
   }
 
@@ -318,33 +393,36 @@
   function gameStory(host, s, done) {
     const st = s.story; let n = 0;
     const count = el('div.story-count'), dots = el('div.story-dots');
-    const btn = el('button.btn.gold', { type: 'button' }, '+ Сөйлем айтылды');
+    const btn = el('button.btn.line', { type: 'button' }, '+ Сөйлем айтылды (микрофонсыз)');
     btn._ok = true;
     const draw = () => {
       count.innerHTML = `<b>${n}</b> / 5–7 сөйлем`;
       dots.innerHTML = Array.from({ length: 7 }, (_, i) => `<i class="${i < n ? 'on' : ''}${i === 4 ? ' goal' : ''}"></i>`).join('');
     };
-    btn.addEventListener('click', () => {
+    const add = () => {
       if (n >= 7) return;
       n++; sfx.ok(); draw();
       if (n === 5) done();
       if (n === 7) btn.disabled = true;
-    });
+    };
+    btn.addEventListener('click', add);
+    // Кез келген айтылған сөйлем есепке алынады
+    const rec = recorder('Сөйлем айту', (ok) => { if (ok) add(); }, 15000);
     host.append(
       el('div.story-head', {}, el('span.eyebrow', {}, 'Тақырып'), el('h3', {}, `«${st.t}»`)),
       el('div.story-pics', {}, st.e.map((e, i) => el('div.pic', { style: `--d:${i * 90}ms` }, e))),
-      el('p.hint', {}, 'Суреттер бойынша 5–7 сөйлемнен тұратын толық әңгіме құрастыр. Қолданған тірек сөзіңді белгіле.'),
+      el('p.hint', {}, 'Суреттер бойынша 5–7 сөйлемнен тұратын әңгіме құрастыр. «Сөйлем айту» батырмасын басып, сөйлеміңді айт — кез келген сөйлем есептеледі.'),
       el('div.story-words', {}, st.w.map((w) => {
         const c = el('button.chip.lg', { type: 'button' }, w);
         c.addEventListener('click', () => c.classList.toggle('used'));
         return c;
       })),
-      el('div.story-ctrl', {}, count, dots, btn));
+      el('div.story-ctrl', {}, count, dots, rec, btn));
     draw();
   }
 
   /* --- артикуляция --- */
-  function gameArtic(host, ex, done) {
+  function gameArtic(host, ex, done, videos) {
     const steps = el('ol.steps', {}, ex.s.map((t) => el('li', {}, t)));
     const ctrl = el('div.artic-ctrl');
     if (ex.hold) {
@@ -380,6 +458,7 @@
       ctrl.append(ring, btn);
     }
     host.append(el('div.artic', {}, el('div.artic-face', {}, el('div.mouth' + (ex.hold ? '.hold' : '.reps'))), el('div', {}, steps), ctrl));
+    if (videos && videos.length) host.append(el('div.videos', {}, videos.map(videoCard)));
   }
 
   /* --- тыныс ойындары --- */
@@ -465,7 +544,7 @@
   }
 
   function gameBoat(host, s, done) {
-    const LEVELS = [[['🪨', 0.5]], [['🪨', 0.36], ['🌿', 0.68]], [['🪨', 0.26], ['🌿', 0.5], ['🪨', 0.74]]];
+    const LEVELS = [[['🪨', 0.5]]];
     let lvl = 0, x = 0, fin = false, stuck = -1, wasOn = false, bob = 0, obs = [];
     const boat = el('div.boat', {}, '⛵');
     const river = el('div.lane.river', {}, el('div.waves'), boat, el('div.finish', {}, '🏝️'));
@@ -474,7 +553,7 @@
       x = 0; stuck = -1;
       river.querySelectorAll('.obs').forEach((o) => o.remove());
       obs = LEVELS[lvl].map(([e, p]) => { const o = el('div.obs', { style: `--x:${p}` }, e); river.append(o); return { p, passed: false, el: o }; });
-      info.innerHTML = `<b>${lvl + 1}-кезең.</b> Қайықты үрлеп, өзеннің арғы бетіне жеткіз. Кедергіге тірелсең — қайта дем алып, тағы үрле.`;
+      info.textContent = 'Қайықты үрлеп, өзеннің арғы бетіне жеткіз. Кедергіге тірелсең — қайта дем алып, тағы үрле.';
     };
     host.append(info, river);
     setup();
@@ -502,11 +581,11 @@
     const lvTabs = (levels) => levels.map((lv, i) => ({ label: `${ROMAN[i]} деңгей`, desc: lv.d, run: (h, d) => MODES[lv.m](h, lv, s, d) }));
     switch (id) {
       case '1.1': return [
-        { label: 'Гүлді оят', desc: 'Суретті таңдау және тыныс алу ойыны.', run: (h, d) => gameFlower(h, s, d) },
-        { label: s.feather, desc: 'Ауамен үрлеу ойыны.', run: (h, d) => gameFeather(h, s, d) },
-        { label: 'Қайықты жүзіп өт', desc: 'Онлайн саяхат ойыны. Әр кезеңде жаңа кедергілер кездеседі.', run: (h, d) => gameBoat(h, s, d) },
+        { label: 'Гүлді оят', desc: 'Суретті таңдау және тыныс алу ойыны.', narr: 'Экранда жабық гүл тұр. Гүлді иіскегендей мұрныңмен дем ал. Кейін аузың арқылы баяу дем шығар. Дұрыс орындаған сайын гүл ашылады.', run: (h, d) => gameFlower(h, s, d) },
+        { label: s.feather, desc: 'Ауамен үрлеу ойыны.', narr: s.fluff ? 'Экран бетінде жеңіл мамық тұр. Оны аузыңмен үрлеп қозғалт.' : 'Экран бетінде қауырсын тұр. Оны аузыңмен үрлеп қозғалт.', run: (h, d) => gameFeather(h, s, d) },
+        { label: 'Қайықты жүзіп өт', desc: 'Онлайн саяхат ойыны. Жолда бір кедергі кездеседі.', narr: 'Экранда өзен мен қағаз қайық тұр. Қайықты үрлеп, өзеннің арғы бетіне жеткіз. Кедергіге тірелсең, қайта дем алып, тағы үрле.', run: (h, d) => gameBoat(h, s, d) },
       ];
-      case '1.2': return s.artic.map((ex) => ({ label: ex.t, desc: 'Артикуляциялық жаттығу. Айнаға қарап орында.', run: (h, d) => gameArtic(h, ex, d) }));
+      case '1.2': return s.artic.map((ex) => ({ label: ex.t, desc: 'Артикуляциялық жаттығу. Айнаға қарап орында.', narr: `${ex.t}. ${ex.s.join(' ')}`, run: (h, d) => gameArtic(h, ex, d, ex.v ? [ex.v] : s.articV) }));
       case '1.3': return lvTabs(s.listen.lv);
       case '2.1': return [{ label: 'Ұшыру', desc: 'Экранда зымыран және жоғары қарай созылған жол бейнеленеді. Дыбысты дұрыс айту арқылы зымыранды жоғары көтер.', run: (h, d) => gameRocket(h, s, d) }];
       case '2.2': return lvTabs(s.where.lv);
@@ -520,6 +599,27 @@
     }
     return [];
   }
+
+  // Дауыстауға қажет барлық мәтін (жазбаларды дайындау құралы үшін)
+  window.PC.collect = () => {
+    const out = { narr: new Set(), words: new Set(), syl: new Set(), sent: new Set(), letters: new Set() };
+    const low = (w) => w.toLowerCase();
+    SOUNDS.forEach((s) => {
+      SECTIONS.forEach((sec) => tabsFor(s, sec.id).forEach((t) => out.narr.add(t.narr || t.desc)));
+      s.rocket.forEach((t) => out.narr.add(t));
+      [...s.listen.lv, ...s.where.lv, ...s.diff].forEach((l) => {
+        [...(l.w || []), ...(l.wa || []), ...(l.wb || []), ...(l.p || []).flat()].forEach((w) => out.words.add(low(w)));
+        [...(l.seq || []), ...(l.opts || [])].forEach((x) => out.letters.add(x));
+      });
+      out.letters.add(s.L);
+      s.box.forEach(([w]) => out.words.add(low(w)));
+      s.miss.flat().forEach((w) => out.words.add(low(w.replace('_', s.L))));
+      s.err.forEach(([w]) => out.words.add(low(w)));
+      s.syl.flat().forEach((w) => out.syl.add(low(w)));
+      s.chain.forEach(([a, scr]) => { out.sent.add(a); scr.split(/,\s*/).forEach((w) => out.words.add(low(w))); });
+    });
+    const o = {}; for (const k in out) o[k] = [...out[k]]; return o;
+  };
 
   /* ---------- ортақ бөліктер ---------- */
   const logo = () => el('a.logo', { href: '#home' }, el('span.mark', {}, 'P'), el('span', { html: 'Premium <em>Clinic</em>' }));
@@ -659,7 +759,10 @@
       tabbar.innerHTML = '';
       if (tabs.length > 1) tabs.forEach((t, k) => tabbar.append(el('button.tab' + (k === i ? '.on' : '') + (tabDone(s, sec.id, k) ? '.done' : ''),
         { type: 'button', role: 'tab', onclick: () => show(k) }, el('i', {}, tabDone(s, sec.id, k) ? '✓' : String(k + 1)), t.label)));
-      desc.textContent = tabs[i].desc;
+      const say = tabs[i].narr || tabs[i].desc;
+      desc.innerHTML = '';
+      desc.append(...[el('span', {}, tabs[i].desc), listenBtn(say, 'Түсіндірмені тыңдау')].filter(Boolean));
+      speak(say, 400);
       stage.innerHTML = ''; stage.classList.remove('in'); void stage.offsetWidth; stage.classList.add('in');
       tabs[i].run(stage, () => {
         markTab(s, sec.id, i);
