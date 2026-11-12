@@ -470,3 +470,23 @@ button.bigletter:active { transform: scale(0.97); }
 .video-link { font-size: 0.9rem; font-weight: 600; color: var(--teal); justify-self: center; }
 .video-link:hover { text-decoration: underline; }
 @media (max-width: 860px) { .rocket-side .rec { justify-content: center; } }
+
+/* 2.1 — дауыспен басқарылатын зымыран */
+.rocket.live { transition: none; }
+.rocket.live.fly span { animation-duration: 0.12s; }
+.rocket.live.fly::after { content: ''; position: absolute; left: 50%; top: 100%; width: 14px; height: 30px; margin-left: -7px; border-radius: 50%; background: radial-gradient(circle at 50% 20%, #fff6c2, #f6a43a 45%, rgba(246, 80, 40, 0) 70%); animation: flame 0.15s linear infinite alternate; }
+.rocket.launch { transition: bottom 1.2s var(--ease); --h: 1.25 !important; }
+@keyframes flame { to { transform: scaleY(1.35); opacity: 0.8; } }
+.goal-mark { position: absolute; left: 18%; right: 18%; bottom: calc(20px + var(--g) * 320px + 28px); border-top: 2px dashed rgba(233, 215, 174, 0.45); }
+.goal-mark span { position: absolute; right: -6px; top: -12px; transform: translateX(100%); font: 600 0.8rem var(--sans); color: rgba(233, 215, 174, 0.8); }
+.goal-mark.cur { border-top-color: var(--gold); }
+.goal-mark.cur span { color: var(--gold); }
+.goal-mark.done { border-top-color: rgba(47, 143, 131, 0.9); }
+.goal-mark.done span { color: #7fd3c4; }
+.voice-meter { width: min(320px, 100%); height: 8px; border-radius: 8px; background: var(--sand); overflow: hidden; }
+.voice-meter b { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--mint), var(--gold)); transition: width 0.1s; }
+.rocket-side .blow-ctrl { justify-content: flex-start; }
+@media (max-width: 860px) {
+  .goal-mark { bottom: calc(20px + var(--g) * 240px + 28px); }
+  .rocket-side .blow-ctrl { justify-content: center; }
+}

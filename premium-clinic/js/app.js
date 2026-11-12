@@ -299,27 +299,42 @@
 
   /* ---------- арнайы ойындар ---------- */
   function gameRocket(host, s, done) {
-    let step = 0;
-    const rocket = el('div.rocket', {}, el('span', {}, '🚀'));
-    const sky = el('div.sky', {}, el('div.stars'), el('div.planet', {}, '🪐'), el('div.track'), rocket, el('div.ground'));
+    // Зымыран дыбыстың созылуымен көтеріледі, дыбыс бәсеңдесе төмен түседі.
+    // Әр деңгейдің мақсаты — жолдағы белгі: I — 1/3, II — 2/3, III — ғарыш.
+    const GOALS = [1 / 3, 2 / 3, 1];
+    let step = 0, h = 0, fin = false;
+    const rocket = el('div.rocket.live', {}, el('span', {}, '🚀'));
+    const marks = GOALS.map((g, k) => el('div.goal-mark', { style: `--g:${g}` }, el('span', {}, ROMAN[k])));
+    const sky = el('div.sky', {}, el('div.stars'), el('div.planet', {}, '🪐'), el('div.track'), ...marks, rocket, el('div.ground'));
+    const meter = el('div.voice-meter', {}, el('b'));
     const txt = el('p.rocket-step'), stepListen = el('div.step-listen');
-    const btn = el('button.btn.gold', { type: 'button' }, 'Дұрыс айтылды ✓');
+    const btn = el('button.btn.line', { type: 'button' }, 'Дұрыс айтылды ✓ (логопед)');
     btn._ok = true;
     const draw = () => {
-      rocket.style.setProperty('--h', step / 3);
-      sky.dataset.step = step;
+      marks.forEach((m, k) => m.classList.toggle('done', k < step));
+      marks.forEach((m, k) => m.classList.toggle('cur', k === step));
       txt.innerHTML = step < 3 ? `<b>${ROMAN[step]} деңгей.</b> ${s.rocket[step]}` : 'Зымыран ғарышқа жетті!';
       stepListen.innerHTML = '';
       if (step < 3) { const b = listenBtn(s.rocket[step], 'Тапсырманы тыңдау'); if (b) stepListen.append(b); speak(s.rocket[step], 300); }
     };
-    btn.addEventListener('click', () => {
-      if (step >= 3) return;
+    const reach = () => {
+      if (fin) return;
       step++; sfx.ok(); draw();
-      if (step === 3) { btn.disabled = true; later(done, 1400); }
-    });
-    host.append(el('div.rocket-wrap', {}, sky, el('div.rocket-side', {}, letterBtn(s.L, '.sm'), txt, stepListen,
-      recorder('Қанекей, сен айтып көр'), btn,
-      el('p.hint', {}, 'Әріпті басып дыбысты тыңда. Өзің айтып көр, дұрыс айтылған сайын батырманы бас — зымыран жоғары көтеріледі.'))));
+      if (step === 3) { fin = true; btn.disabled = true; ctl.stop(); rocket.classList.add('launch'); later(done, 1400); }
+    };
+    btn.addEventListener('click', () => { if (step < 3) { h = Math.max(h, GOALS[step]); rocket.style.setProperty('--h', h); reach(); } });
+    const side = el('div.rocket-side', {}, letterBtn(s.L, '.sm'), txt, stepListen);
+    host.append(el('div.rocket-wrap', {}, sky, side));
+    const ctl = blowControl(side, (on, dt, level) => {
+      if (fin) return;
+      h = Math.max(0, Math.min(1, h + (on ? 0.22 : -0.14) * dt));
+      rocket.style.setProperty('--h', h);
+      rocket.classList.toggle('fly', on);
+      meter.firstChild.style.width = Math.min(100, (level || (on ? 0.3 : 0)) * 400) + '%';
+      if (step < 3 && h >= GOALS[step] - 0.001) reach();
+    }, { hold: `🗣 ${s.L} дыбысын соз (басып тұр)`, mic: '🎙 Микрофонмен айту', micOn: `🎙 Микрофон қосулы — ${s.L} дыбысын созып айт!`, thr: 0.035 });
+    side.append(meter, el('p.hint', {}, `Микрофонды қосып, ${s.L} дыбысын созып айт — дыбыс созылған сайын зымыран жоғары көтеріледі, тоқтасаң төмен түседі. Белгіге жеткенде келесі деңгей ашылады.`),
+      recorder('Қанекей, сен айтып көр'), btn);
     draw();
   }
 
@@ -462,10 +477,10 @@
   }
 
   /* --- тыныс ойындары --- */
-  function blowControl(host, onFrame) {
+  function blowControl(host, onFrame, o = {}) {
     const st = { on: false, mic: false, level: 0 };
-    const btn = el('button.btn.gold.blow', { type: 'button' }, '💨 Үрле (басып тұр)');
-    const mic = el('button.btn.ghost', { type: 'button' }, '🎙 Микрофонмен үрлеу');
+    const btn = el('button.btn.gold.blow', { type: 'button' }, o.hold || '💨 Үрле (басып тұр)');
+    const mic = el('button.btn.ghost', { type: 'button' }, o.mic || '🎙 Микрофонмен үрлеу');
     const set = (v) => { st.on = v; btn.classList.toggle('active', v); };
     btn.addEventListener('pointerdown', (e) => { e.preventDefault(); set(true); });
     ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => btn.addEventListener(ev, () => set(false)));
@@ -480,7 +495,7 @@
         ctx = new (window.AudioContext || window.webkitAudioContext)();
         an = ctx.createAnalyser(); an.fftSize = 1024; buf = new Uint8Array(an.fftSize);
         ctx.createMediaStreamSource(stream).connect(an);
-        st.mic = true; mic.textContent = '🎙 Микрофон қосулы — үрле!'; mic.classList.add('on');
+        st.mic = true; mic.textContent = o.micOn || '🎙 Микрофон қосулы — үрле!'; mic.classList.add('on');
       } catch (e) { mic.textContent = 'Микрофон қолжетімсіз — батырманы қолдан'; mic.disabled = true; }
     });
     let raf, last = performance.now();
@@ -490,9 +505,9 @@
       if (st.mic) {
         an.getByteTimeDomainData(buf);
         let sum = 0; for (let i = 0; i < buf.length; i++) { const v = (buf[i] - 128) / 128; sum += v * v; }
-        micOn = Math.sqrt(sum / buf.length) > 0.09;
+        st.level = Math.sqrt(sum / buf.length); micOn = st.level > (o.thr || 0.09);
       }
-      onFrame(st.on || micOn, dt);
+      onFrame(st.on || micOn, dt, st.mic ? st.level : 0);
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
