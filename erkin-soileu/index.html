@@ -722,8 +722,18 @@ const has = key => !!PROG[key];
 /* =========================================================
    AUDIO
    ========================================================= */
-let AC=null;
-const ac=()=>{ if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)() }catch(e){} } if(AC&&AC.state==='suspended') AC.resume(); return AC; };
+let AC=null; let SR_CUR=null;
+/* Phones switch to "call" audio while the mic or camera is on; sounds made with the
+   old audio context then come out silent or very quiet. After capture ends we
+   start a fresh audio context. */
+let CAPTURES=0, AUDIO_DIRTY=false;
+const captureOn=()=>{ CAPTURES++; AUDIO_DIRTY=true; };
+const captureOff=()=>{ CAPTURES=Math.max(0,CAPTURES-1); };
+const ac=()=>{
+  if(AC && AUDIO_DIRTY && CAPTURES===0 && !SR_CUR){ try{ AC.close() }catch(e){} AC=null; AUDIO_DIRTY=false; }
+  if(!AC||AC.state==='closed'){ try{ AC=new (window.AudioContext||window.webkitAudioContext)() }catch(e){ AC=null } }
+  if(AC&&AC.state!=='running'){ try{ AC.resume() }catch(e){} }
+  return AC; };
 function tone(f,dur=1.2,type='sine',vol=.25,partials=[1]){
   const c=ac(); if(!c) return; const t=c.currentTime;
   partials.forEach((p,i)=>{ const o=c.createOscillator(), g=c.createGain(); o.type=type; o.frequency.value=f*p;
@@ -733,7 +743,7 @@ function tone(f,dur=1.2,type='sine',vol=.25,partials=[1]){
 function noise(dur=.12,vol=.5,freq=1500){
   const c=ac(); if(!c) return; const t=c.currentTime; const len=Math.floor(c.sampleRate*dur);
   const b=c.createBuffer(1,len,c.sampleRate), d=b.getChannelData(0); for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*(1-i/len)**2;
-  const s=c.createBufferSource(); s.buffer=b; const f=c.createBiquadFilter(); f.type='bandpass'; f.frequency.value=freq; const g=c.createGain(); g.gain.value=vol;
+  const s=c.createBufferSource(); s.buffer=b; const f=c.createBiquadFilter(); f.type='bandpass'; f.frequency.value=freq; f.Q.value=.6; const g=c.createGain(); g.gain.value=vol;
   s.connect(f).connect(g).connect(c.destination); s.start(t);
 }
 const FILES={cat:1,dog:1,cow:1,sheep:1,rooster:1,horse:1,duck:1};
@@ -744,7 +754,7 @@ function play(name){
     case 'bellHi': tone(1320,1.6,'sine',.22,[1,2.76,5.4]); break;
     case 'bellLo': tone(330,1.8,'sine',.3,[1,2.76,5.4]); break;
     case 'drum': { const c=ac(); if(!c) return; const t=c.currentTime,o=c.createOscillator(),g=c.createGain(); o.frequency.setValueAtTime(150,t); o.frequency.exponentialRampToValueAtTime(50,t+.3); g.gain.setValueAtTime(.7,t); g.gain.exponentialRampToValueAtTime(.001,t+.4); o.connect(g).connect(c.destination); o.start(t); o.stop(t+.45);} break;
-    case 'clap': noise(.14,.9,1400); break;
+    case 'clap': noise(.16,2.2,1300); tone(180,.12,'triangle',.25); break;
     case 'flute': tone(660,.9,'triangle',.25,[1,2]); break;
     case 'hoof': noise(.06,.9,900); setTimeout(()=>noise(.06,.7,700),180); setTimeout(()=>noise(.06,.9,900),420); setTimeout(()=>noise(.06,.7,700),600); break;
     case 'tick': tone(880,.12,'sine',.12); break;
@@ -801,7 +811,6 @@ const wiggle=el=>{ el.classList.remove('no'); void el.offsetWidth; el.classList.
    SPEECH RECOGNITION (Kazakh, browser Web Speech API)
    ========================================================= */
 const SRClass = window.SpeechRecognition || window.webkitSpeechRecognition || null;
-let SR_CUR=null;
 function stopListening(){ if(SR_CUR){ const r=SR_CUR; SR_CUR=null; r.onend=null; r.onresult=null; r.onerror=null; try{ r.abort() }catch(e){} } }
 const STOPW=new Set(['мен','сен','ол','бұл','сосын','және','әрі','біз','оның','менің','сенің','бір','деп','дейді','мына','енді','ал','да','де','та','те','мен','бар']);
 const norm=s=>(s||'').toLowerCase().replace(/ё/g,'е').replace(/[^\p{L}\p{N}\s]/gu,' ').replace(/\s+/g,' ').trim();
@@ -852,7 +861,7 @@ function micPanel(o){
   function start(){
     if(passed||blocked||!box.isConnected) return;
     stopListening();
-    const r=new SRClass(); SR_CUR=r; r.lang='kk-KZ'; r.interimResults=true; r.maxAlternatives=5; r.continuous=false;
+    const r=new SRClass(); SR_CUR=r; AUDIO_DIRTY=true; r.lang='kk-KZ'; r.interimResults=true; r.maxAlternatives=5; r.continuous=false;
     let fin='', got=false;
     r.onstart=()=>{ btn.classList.add('on'); st.textContent='Тыңдап тұрмын... Асықпай сөйле 🙂'; };
     r.onresult=e=>{
@@ -919,7 +928,7 @@ function camView(){
       if(!navigator.mediaDevices?.getUserMedia) throw new Error('nocam');
       stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480}},audio:false});
       if(!el.isConnected){ stream.getTracks().forEach(x=>x.stop()); return; }
-      video.srcObject=stream; await video.play().catch(()=>{});
+      captureOn(); video.srcObject=stream; await video.play().catch(()=>{});
       api.ready=true; st.textContent='Камера дайын. Бет-қимылды тану жүктелуде...';
       try{ fl=await getLandmarker(); api.tracking=true; st.textContent='Бетіңді камераға көрсет 🙂'; }
       catch(e){ st.textContent='Бет-қимылды тану жүктелмеді (интернетті тексеріңіз). Камераны айна ретінде қолданыңыз.'; api.failed=true; api.onFail&&api.onFail(); }
@@ -927,7 +936,7 @@ function camView(){
   })();
   let hold=0, armed=true, prevOk=false, lastT=performance.now();
   const loop=now=>{
-    if(!el.isConnected){ if(stream) stream.getTracks().forEach(x=>x.stop()); return; }
+    if(!el.isConnected){ if(stream){ stream.getTracks().forEach(x=>x.stop()); stream=null; captureOff(); } return; }
     const dt=Math.min(.1,(now-lastT)/1000); lastT=now;
     if(fl&&api.ready&&video.readyState>=2&&now>lastTs){
       lastTs=now;
@@ -1046,13 +1055,13 @@ R.breath=(t,root,done)=>{
   let micOn=false, analyser=null, buf=null, stream=null;
   mic.onclick=async()=>{
     if(micOn) return;
-    try{ stream=await navigator.mediaDevices.getUserMedia({audio:true}); const c=ac(); const src=c.createMediaStreamSource(stream); analyser=c.createAnalyser(); analyser.fftSize=512; buf=new Uint8Array(analyser.fftSize); src.connect(analyser); micOn=true; mic.textContent='🎤 Микрофон қосулы'; msg.textContent='Микрофонға қарай ақырын үрле.'; }
+    try{ stream=await navigator.mediaDevices.getUserMedia({audio:true}); captureOn(); const c=ac(); const src=c.createMediaStreamSource(stream); analyser=c.createAnalyser(); analyser.fftSize=512; buf=new Uint8Array(analyser.fftSize); src.connect(analyser); micOn=true; mic.textContent='🎤 Микрофон қосулы'; msg.textContent='Микрофонға қарай ақырын үрле.'; }
     catch(e){ mic.textContent='🎤 Микрофон қолжетімсіз'; mic.disabled=true; msg.textContent='Микрофонсыз да болады: батырманы басып тұрып үрле.'; }
   };
 
   let last=performance.now(), bubT=0;
   const step=now=>{
-    if(!root.isConnected){ if(stream) stream.getTracks().forEach(x=>x.stop()); return; }
+    if(!root.isConnected){ if(stream){ stream.getTracks().forEach(x=>x.stop()); stream=null; captureOff(); } return; }
     const dt=Math.min(.1,(now-last)/1000); last=now;
     let blowing=holding;
     if(micOn&&analyser){ analyser.getByteTimeDomainData(buf); let s=0; for(const v of buf){ const d=(v-128)/128; s+=d*d; } const rms=Math.sqrt(s/buf.length); if(rms>.06){ if(!holding){ blowing=true; } } }
@@ -1069,7 +1078,7 @@ R.breath=(t,root,done)=>{
     if(sc==='balloon'&&actor) actor.style.transform=`translateX(-50%) scale(${.45+prog*1.0})`;
     if(sc==='candle'){ const out=Math.floor(prog*N+1e-6); extra.forEach((f,i)=>{ if(i<out){ f.style.opacity=0; } else { f.style.opacity=1; f.style.transform= blowing&&i===out? `skewX(${Math.sin(now/60)*18}deg) scaleY(.8)` : ''; } }); }
     if(sc==='bubbles'&&blowing&&!finished){ bubT+=dt; if(bubT>.18){ bubT=0; const s=16+Math.random()*30; const b=h('span',{class:'bub',style:`width:${s}px;height:${s}px;left:${18+Math.random()*8}%;bottom:${50+Math.random()*30}px;--dx:${60+Math.random()*W*.6}px`}); st.append(b); setTimeout(()=>b.remove(),3300); } }
-    if(prog>=1&&!finished){ finished=true; holding=false; blow.classList.remove('on'); blow.disabled=true; msg.className='msg good'; msg.textContent=pick(PRAISE)+' Сен өте жақсы үрледің!'; play('yay'); if(stream) stream.getTracks().forEach(x=>x.stop()); done(); }
+    if(prog>=1&&!finished){ finished=true; holding=false; blow.classList.remove('on'); blow.disabled=true; msg.className='msg good'; msg.textContent=pick(PRAISE)+' Сен өте жақсы үрледің!'; if(stream){ stream.getTracks().forEach(x=>x.stop()); stream=null; captureOff(); } play('yay'); done(); }
     requestAnimationFrame(step);
   };
   requestAnimationFrame(step);
@@ -1438,6 +1447,7 @@ function board(kind,id,lv){
 
   const drawDots=()=>{ dots.replaceChildren(...levels.map((_,i)=>h('i',{class:i<ti?'on':i===ti?'cur':''}))); };
   const runTask=()=>{
+    stopListening();
     drawDots();
     const t=levels[ti]; const inner=h('div',{style:'display:flex;flex-direction:column;gap:16px'});
     taskEl.replaceChildren(inner);
