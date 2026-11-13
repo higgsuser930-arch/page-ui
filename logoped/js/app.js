@@ -1,6 +1,6 @@
 /* Сөйле — негізгі қосымша: бағыттау, экрандар, ойындар */
 (() => {
-  const { say, sfx, settings } = Eng;
+  const { say, sayAll, sfx, settings } = Eng;
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const h = (html) => { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstElementChild; };
@@ -67,7 +67,7 @@
     return o;
   }
   const header = (title, back) => h(`<div class="ph"><a class="iconbtn" href="${back}" aria-label="Артқа" style="text-decoration:none">◀</a><h2>${title}</h2><span class="clay-s stars" id="starc">⭐ ${P.stars}</span></div>`);
-  const sayBtn = (text, label = '🔊 Түсіндірме') => { const b = h(`<button class="btn soft sm">${label}</button>`); b.onclick = () => say(text); return b; };
+  const sayBtn = (text, label = '🔊 Түсіндірме') => { const b = h(`<button class="btn soft sm">${label}</button>`); b.onclick = () => sayAll([].concat(text)); return b; };
 
   /* ---------- дауыс тану компоненті ---------- */
   function voiceBox(box, opts) {
@@ -234,7 +234,7 @@
       <div class="row" style="margin-top:12px"><span>Жаттығу</span><div class="grow meter"><i id="prog"></i></div><span id="rcount">0/${ex.rounds}</span></div>
       <div class="row center" style="justify-content:center;margin-top:16px"><button class="btn" id="go">▶ Бастау</button><button class="btn soft hold" id="hold">🌬️ Басып тұрып үрле</button></div>
       <div class="note" id="mnote">Микрофон дем шығарғаныңды естиді. Микрофон болмаса, «Басып тұрып үрле» батырмасын қолдан.</div></div>`));
-    $('#intro').append(sayBtn(ex.steps.join(' ')));
+    $('#intro').append(sayBtn(ex.steps));
     const scene = $('#scene'), coach = $('#coach'), lvl = $('#lvl'), prog = $('#prog');
     sc.update(scene, 0, 0, ex.rounds);
 
@@ -294,7 +294,7 @@
       modal({ title: 'Жарайсың!', text: `«${ex.title}» жаттығуы аяқталды`, stars: 3, buttons: [id < BREATH.length ? { label: 'Келесі жаттығу ➜', fn: () => (location.hash = `#/s/1/${id + 1}`) } : { label: 'Бөлімдерге ➜', fn: () => (location.hash = '#/sections') }, { label: 'Қайталау', cls: 'soft', fn: route }] });
     }
     $('#go').onclick = start;
-    setTimeout(() => Eng.alive(E) && say(ex.steps.join(' ')), 400);
+    setTimeout(() => Eng.alive(E) && sayAll(ex.steps, E), 400);
   }
 
   /* ---------- 2-бөлім: артикуляция (алдыңғы камера) ---------- */
@@ -410,7 +410,7 @@
         if (step === t.seq.length) api.win();
       } else {
         b.classList.remove('wrong'); void b.offsetWidth; b.classList.add('wrong'); sfx.bad(); step = 0; dots.forEach((d) => d.classList.remove('fin'));
-        say('Тапсырманы қайта тыңдайық. ' + t.say);
+        sayAll(['Тапсырманы қайта тыңдайық.', t.say]);
       }
     }));
   };
@@ -427,19 +427,19 @@
         box.innerHTML = `<div class="big-say">Сандықтан сурет шықты! Тыңда:</div><div class="items">${shuffle([t, ...others]).map((x) => `<button class="item" data-w="${x.word}"><span class="e">${x.e}</span></button>`).join('')}</div><div class="center"><button class="btn soft sm" id="rp">🔊 Қайта тыңдау</button></div>`;
         const q = `Қайсысы — ${t.word}?`; say(q); $('#rp', box).onclick = () => say(q);
         $$('.item', box).forEach((b) => (b.onclick = () => {
-          if (b.dataset.w === t.word) { sfx.pop(); b.classList.add('good'); setTimeout(() => speakStage(), 700); } else { b.classList.add('wrong'); sfx.bad(); say('Тағы тыңда. ' + q); setTimeout(() => b.classList.remove('wrong'), 500); }
+          if (b.dataset.w === t.word) { sfx.pop(); b.classList.add('good'); setTimeout(() => speakStage(), 700); } else { b.classList.add('wrong'); sfx.bad(); sayAll(['Тағы тыңда.', q]); setTimeout(() => b.classList.remove('wrong'), 500); }
         }));
       } else speakStage();
     };
     function speakStage() {
       const targets = lv === 0 ? [t.word] : t.ans;
-      const prompt = lv === 0 ? `Бұл — ${t.word}. Енді өзің айт: ${t.word}` : lv === 1 ? t.q : t.q + ' Заттың атын да айт!';
+      const prompt = lv === 0 ? [`Бұл — ${t.word}. Енді өзің айт: ${t.word}`] : lv === 1 ? [t.q] : [t.q, 'Заттың атын да айт!'];
       box.innerHTML = `<div class="pic">${t.e}</div><div class="big-say">${lv === 0 ? `«${t.word}»` : t.q}</div><div class="center"><div id="hint" class="caption"></div><button class="btn soft sm" id="rp">🔊 Қайта тыңдау</button></div><div id="vb"></div>`;
-      say(prompt); $('#rp', box).onclick = () => say(prompt);
+      sayAll(prompt); $('#rp', box).onclick = () => sayAll(prompt);
       const full = lv === 0 ? t.word : t.show;
       voiceBox($('#vb', box), {
         hint: lv === 0 ? `${t.word}. Қайтала: ${t.word}` : `Былай айтуға болады: ${t.show}`,
-        onHelp: () => { $('#hint', box).textContent = lv === 0 ? hintWord : t.show; if (lv === 0) say(hintWord); },
+        onHelp: () => { $('#hint', box).textContent = lv === 0 ? hintWord : t.show; },
         check: (texts) => { const s = Match.bestMatch(texts, targets); return { ok: s >= 0.72, score: s, msg: 'Дұрыс жауап: ' + full }; },
         onOk: () => { $('#hint', box).textContent = full; api.win(); },
         onSkip: () => api.win(true),

@@ -16,3 +16,7 @@ cd logoped && python3 -m http.server 8765   # содан соң http://localhost
 
 ## Талаптар
 Дауыс тану үшін Chrome / Edge (Android Chrome да болады). Safari/Firefox-та дауыс тану жоқ — сонда ересек адам «Дұрыс/Қате» батырмасымен бағалайды.
+
+## Дауыс (ElevenLabs)
+Барлық түсіндірмелер `audio/` қапшығында дайын mp3 (ElevenLabs `eleven_v3`, қазақша). `audio/manifest.json` — «фраза → файл». Фраза табылмаса, браузердің TTS-і қолданылады.
+Мәтінді өзгертсеңіз: `node tools/gen_audio.mjs` (жоқ фразаларды ғана жасайды). Басқа дауыс: `VOICE_ID=... node tools/gen_audio.mjs`.

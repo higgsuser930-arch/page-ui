@@ -52,11 +52,27 @@ const Eng = (() => {
     voices.find((v) => /^kk/i.test(v.lang)) || voices.find((v) => /^ru/i.test(v.lang)) || voices.find((v) => /^tr/i.test(v.lang)) || null;
   const hasKazakhVoice = () => voices.some((v) => /^kk/i.test(v.lang));
 
+  /* дайын аудио (ElevenLabs): audio/manifest.json -> {фраза: файл}. Жоқ болса браузер TTS қолданылады */
+  let manifest = {};
+  fetch('audio/manifest.json').then((r) => (r.ok ? r.json() : {})).then((m) => { manifest = m || {}; }).catch(() => {});
+  let cur = null; // {a, fin}
+
   function say(text, { rate = 0.85 } = {}) {
     return new Promise((res) => {
-      if (!settings.voice || !('speechSynthesis' in window)) return res();
+      if (!settings.voice) return res();
+      stopSpeak();
+      const file = manifest[text];
+      if (file) {
+        const a = new Audio('audio/' + file);
+        let done = false;
+        const fin = () => { if (!done) { done = true; if (cur && cur.a === a) cur = null; res(); } };
+        cur = { a, fin };
+        a.onended = fin; a.onerror = () => { fin(); };
+        a.play().catch(fin);
+        return;
+      }
+      if (!('speechSynthesis' in window)) return res();
       try {
-        speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(text);
         const v = pickVoice();
         if (v) { u.voice = v; u.lang = v.lang; } else u.lang = 'kk-KZ';
@@ -69,7 +85,13 @@ const Eng = (() => {
       } catch { res(); }
     });
   }
-  const stopSpeak = () => { try { speechSynthesis.cancel(); } catch { /* ignore */ } };
+  async function sayAll(arr, e) {
+    for (const t of arr) { if (e !== undefined && !alive(e)) return; await say(t); }
+  }
+  function stopSpeak() {
+    if (cur) { const c = cur; cur = null; try { c.a.pause(); } catch { /* ignore */ } c.fin(); }
+    try { speechSynthesis.cancel(); } catch { /* ignore */ }
+  }
 
   /* ---------- дауыс тану (STT) ---------- */
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -140,5 +162,5 @@ const Eng = (() => {
 
   function stopAll() { epoch++; stopSpeak(); abortListen(); stopCam(); stopBlow(); }
 
-  return { store, settings, saveSettings, sfx, say, stopSpeak, sttSupported, listen, abortListen, startCam, stopCam, startBlow, stopBlow, stopAll, hasKazakhVoice, epoch: () => epoch, alive, sleep };
+  return { store, settings, saveSettings, sfx, say, sayAll, stopSpeak, sttSupported, listen, abortListen, startCam, stopCam, startBlow, stopBlow, stopAll, hasKazakhVoice, epoch: () => epoch, alive, sleep };
 })();
