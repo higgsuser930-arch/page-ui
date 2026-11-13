@@ -811,9 +811,13 @@ const wiggle=el=>{ el.classList.remove('no'); void el.offsetWidth; el.classList.
    SPEECH RECOGNITION (Kazakh, browser Web Speech API)
    ========================================================= */
 const SRClass = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+/* iPhone/iPad: speech recognition may only start from a tap, never by itself */
+const IOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+let SR_LANG='kk-KZ'; try{ SR_LANG=localStorage.getItem('es-srlang')||'kk-KZ' }catch(e){}
 function stopListening(){ if(SR_CUR){ const r=SR_CUR; SR_CUR=null; r.onend=null; r.onresult=null; r.onerror=null; try{ r.abort() }catch(e){} } }
 const STOPW=new Set(['мен','сен','ол','бұл','сосын','және','әрі','біз','оның','менің','сенің','бір','деп','дейді','мына','енді','ал','да','де','та','те','мен','бар']);
-const norm=s=>(s||'').toLowerCase().replace(/ё/g,'е').replace(/[^\p{L}\p{N}\s]/gu,' ').replace(/\s+/g,' ').trim();
+const FOLD={'ә':'а','ө':'о','қ':'к','ғ':'г','ң':'н','ұ':'у','ү':'у','һ':'х','і':'и','ё':'е'};
+const norm=s=>(s||'').toLowerCase().replace(/[әөқғңұүһіё]/g,c=>FOLD[c]).replace(/[^\p{L}\p{N}\s]/gu,' ').replace(/\s+/g,' ').trim();
 const words=s=>{ const n=norm(s); return n?n.split(' '):[]; };
 function lev(a,b){ const m=a.length,n=b.length; if(!m||!n) return m||n; let prev=Array.from({length:n+1},(_,j)=>j);
   for(let i=1;i<=m;i++){ const cur=[i]; for(let j=1;j<=n;j++) cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1)); prev=cur; } return prev[n]; }
@@ -844,7 +848,7 @@ function micPanel(o){
     return box;
   }
   const btn=h('button',{class:'micbtn','aria-label':'Сөйлеу'},'🎤');
-  const st=h('div',{class:'micst'},'Микрофон қосылуда...');
+  const st=h('div',{class:'micst'},IOS?'🎤 Микрофонды басып, сөйле.':'Микрофон қосылуда...');
   const heard=h('div',{class:'heard'});
   const msg=h('div',{class:'msg kind'});
   const skip=h('button',{class:'hint-tgl',hidden:true},'Ересек: келесіге өту →');
@@ -856,13 +860,13 @@ function micPanel(o){
   function fail(text){ tries++; play('soft'); msg.className='msg kind';
     msg.textContent= text? (o.failMsg||'Басқаша естілді. Қайтадан байқап көр 🙂') : 'Ештеңе естілмеді. Қайтадан байқап көр 🙂';
     st.textContent='🎤 Микрофонды басып, қайтадан айт.';
-    if(tries>=max) skip.hidden=false; else setTimeout(start,1800); }
+    if(tries>=max) skip.hidden=false; else if(!IOS) setTimeout(()=>start(false),1800); }
   skip.onclick=()=>{ if(o.onSkip) o.onSkip(); pass(''); };
-  function start(){
+  function start(fromTap){
     if(passed||blocked||!box.isConnected) return;
     stopListening();
-    const r=new SRClass(); SR_CUR=r; AUDIO_DIRTY=true; r.lang='kk-KZ'; r.interimResults=true; r.maxAlternatives=5; r.continuous=false;
-    let fin='', got=false;
+    const r=new SRClass(); SR_CUR=r; AUDIO_DIRTY=true; r.lang=SR_LANG; r.interimResults=true; r.maxAlternatives=5; r.continuous=false;
+    let fin='', got=false, handled=false;
     r.onstart=()=>{ btn.classList.add('on'); st.textContent='Тыңдап тұрмын... Асықпай сөйле 🙂'; };
     r.onresult=e=>{
       let interim='';
@@ -875,15 +879,29 @@ function micPanel(o){
       heard.textContent='Естігенім: «'+(fin+' '+interim).trim()+'»';
     };
     r.onerror=e=>{
-      if(e.error==='not-allowed'||e.error==='service-not-allowed'){ blocked=true; st.textContent='Микрофонға рұқсат берілмеді. Браузердің мекенжай жолағындағы 🔒 белгісінен микрофонды рұқсат етіңіз.'; skip.hidden=false; skip.textContent='Ересек: бала айтты, келесіге өту →'; }
-      else if(e.error==='network'){ blocked=true; st.textContent='Дауысты тану үшін интернет керек.'; skip.hidden=false; }
-      else if(e.error==='language-not-supported'){ blocked=true; st.textContent='Бұл құрылғы қазақ тілінде дауысты танымайды.'; skip.hidden=false; }
+      const er=e.error;
+      if(er==='no-speech'||er==='aborted') return;
+      handled=true;
+      if(er==='not-allowed'&&!fromTap){ st.textContent='🎤 Микрофонды басып, сөйле.'; return; }
+      if((er==='service-not-allowed'||er==='language-not-supported')&&SR_LANG!=='ru-RU'){
+        SR_LANG='ru-RU'; try{ localStorage.setItem('es-srlang',SR_LANG) }catch(x){}
+        st.textContent='Бұл құрылғыда қазақ тілін тану жоқ екен, жуық тану қосылды. 🎤 Микрофонды тағы бір басыңыз.'; return; }
+      blocked=true; skip.hidden=false; skip.textContent='Ересек: бала айтты, келесіге өту →';
+      if(er==='not-allowed') st.textContent= IOS
+        ? 'Микрофонға рұқсат жоқ. iPhone-да: Баптаулар → Safari → Микрофон → «Рұқсат ету». Сосын бетті жаңартыңыз.'
+        : 'Микрофонға рұқсат жоқ. Мекенжай жолағындағы белгіні басып, микрофонды рұқсат етіңіз, сосын бетті жаңартыңыз.';
+      else if(er==='service-not-allowed'||er==='language-not-supported') st.textContent= IOS
+        ? 'Дауысты тану өшірулі. iPhone-да: Баптаулар → Жалпы → Пернетақта → «Диктовканы қосу» қосыңыз, сосын бетті жаңартыңыз.'
+        : 'Бұл браузерде дауысты тану жұмыс істемейді. Chrome-да ашыңыз.';
+      else if(er==='network') st.textContent='Дауысты тану үшін интернет керек.';
+      else if(er==='audio-capture') st.textContent='Микрофон табылмады немесе басқа бағдарлама қолданып тұр.';
+      else st.textContent='Дауысты тану қатесі ('+er+'). 🎤 Тағы басып көріңіз.', blocked=false;
     };
-    r.onend=()=>{ if(SR_CUR===r) SR_CUR=null; btn.classList.remove('on'); if(passed||blocked) return; fail(got?fin:''); if(fin) heard.textContent='Естігенім: «'+fin+'»'; };
+    r.onend=()=>{ if(SR_CUR===r) SR_CUR=null; btn.classList.remove('on'); if(passed||blocked||handled) return; fail(got?fin:''); if(fin) heard.textContent='Естігенім: «'+fin+'»'; };
     try{ r.start(); }catch(e){ st.textContent='🎤 Микрофонды басып, сөйле.'; }
   }
-  btn.onclick=start;
-  if(o.auto!==false) setTimeout(start,o.delay||500);
+  btn.onclick=()=>start(true);
+  if(o.auto!==false&&!IOS) setTimeout(()=>start(false),o.delay||500);
   return box;
 }
 
