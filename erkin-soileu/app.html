@@ -239,6 +239,24 @@ a{color:inherit}
 .adult td,.adult th{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;vertical-align:top}
 .tblwrap{overflow-x:auto}
 
+
+/* camera + mic */
+.cam{position:relative;border-radius:22px;overflow:hidden;background:#0d1a1a;aspect-ratio:4/3;width:min(100%,440px);align-self:center;transition:box-shadow .3s}
+.cam video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);display:block}
+.cam.off video{display:none}
+.cam .camst{position:absolute;left:10px;right:10px;bottom:10px;background:rgba(0,0,0,.6);color:#fff;border-radius:12px;padding:8px 12px;font-weight:800;font-size:15px}
+.cam .hold{position:absolute;left:0;top:0;height:8px;width:0;background:var(--ok);transition:width .1s}
+.cam.okflash{box-shadow:0 0 0 5px var(--ok)}
+.stepctl{display:flex;flex-direction:column;gap:10px;align-items:flex-start}
+.mic{display:flex;flex-direction:column;gap:8px;background:var(--bg);border-radius:18px;padding:14px;align-self:stretch}
+.microw{display:flex;gap:14px;align-items:center}
+.micbtn{width:76px;height:76px;border-radius:50%;border:0;background:var(--k);color:#fff;font-size:34px;flex:none;box-shadow:var(--shadow)}
+.micbtn.on{animation:pulse 1.2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--k) 60%,transparent)}100%{box-shadow:0 0 0 20px transparent}}
+.micst{font-weight:800}
+.heard{color:var(--muted);font-size:16px;overflow-wrap:anywhere}
+.opt.sel{border-color:var(--k);box-shadow:var(--shadow)}
+
 @media (max-width:860px){
   .hero{grid-template-columns:1fr}
   .letters{max-width:420px;width:100%;justify-self:center}
@@ -319,9 +337,9 @@ const PREP = [
    goal:'Ерін, тіл, жақ бұлшықеттерінің қимыл-қозғалысын дамыту.',
    names:['«Күлімде»','«Сағат»','«Ат шауып келеді»'],
    levels:[
-     [{t:'steps',q:'Айнаға қарап, бірге жасайық.',items:[['😁','Кең күлімде. Тістерің көрініп тұрсын.'],['😌','Ерінді босат, демал.'],['😁','Тағы күлімде: бір, екі, үш, төрт, бес.'],['😊','Жарайсың! Ерінді босат.']]}],
-     [{t:'steps',q:'Тіл — сағаттың тілі. Тик-так!',anim:'pend',items:[['😮','Ауызды сәл аш, күлімде.'],['➡️','Тілдің ұшын оң жақ бұрышқа тигіз.'],['⬅️','Енді сол жақ бұрышқа тигіз.'],['🕰️','Сағаттай асықпай: тик — так, 5 рет.']]}],
-     [{t:'steps',q:'Ат тұяғының дыбысын жасайық.',snd:'hoof',items:[['😮','Ауызды аш, күлімде.'],['👅','Тілді таңдайға жабыстыр.'],['🐴','Тілді «тық» еткізіп түсір. Ат ақырын жүреді: тық... тық...'],['🐎','Ат шауып келеді: тық-тық-тық! Асықпай, 5 рет.']]}],
+     [{t:'steps',cam:true,q:'Айнаға қарап, бірге жасайық.',items:[['😁','Кең күлімде. Тістерің көрініп тұрсын.','smile'],['😌','Ерінді босат, демал.','relax'],['😁','Тағы күлімде: бір, екі, үш, төрт, бес.','smile'],['😊','Жарайсың! Ерінді босат.','relax']]}],
+     [{t:'steps',cam:true,q:'Тіл — сағаттың тілі. Тик-так!',anim:'pend',items:[['😮','Ауызды сәл аш, күлімде.','open'],['➡️','Тілдің ұшын оң жақ бұрышқа тигіз.','side'],['⬅️','Енді сол жақ бұрышқа тигіз.','side'],['🕰️','Сағаттай асықпай: тик — так, 5 рет.']]}],
+     [{t:'steps',cam:true,q:'Ат тұяғының дыбысын жасайық.',snd:'hoof',items:[['😮','Ауызды аш, күлімде.','open'],['👅','Тілді таңдайға жабыстыр.'],['🐴','Тілді «тық» еткізіп түсір. Ат ақырын жүреді: тық... тық...'],['🐎','Ат шауып келеді: тық-тық-тық! Асықпай, 5 рет.']]}],
    ]},
   {id:3, ic:'🔔', k:'--c3', title:'Дауыс пен сөйлеу ырғағын дамыту',
    goal:'Дауыс күшін, интонацияны, ырғақты сезінуді дамыту.',
@@ -414,30 +432,30 @@ const GAMES = [
   levels:[
    [{t:'choose',q:'Күліп тұрған бетті тап.',opts:[['😢',''],['😊',''],['😠',''],['😮','']],a:1},
     {t:'choose',q:'Ренжіген бетті тап.',opts:[['😄',''],['😃',''],['😞',''],['😊','']],a:2}],
-   [{t:'steps',q:'Айнаға қарап, қайтала.',items:[['😁','Кең күлімде — «бақа» сияқты.'],['😗','Ерінді түтікше етіп алға соз — «піл» сияқты.'],['😁','Тағы күлімде.'],['😗','Тағы соз.'],['😌','Ерінді босатып, демал.']]}],
-   [{t:'steps',q:'Бетіңмен көрсет те, атын айт.',items:[['😊','Қуаныш. «Мен қуаныштымын!»'],['😢','Мұң. «Мен мұңаймын.»'],['😮','Таңдану. «О, қандай керемет!»'],['😠','Ашу. «Мен ренжідім.»'],['😊','Енді тағы күлімде!']]}],
+   [{t:'steps',cam:true,q:'Айнаға қарап, қайтала.',items:[['😁','Кең күлімде — «бақа» сияқты.','smile'],['😗','Ерінді түтікше етіп алға соз — «піл» сияқты.','pucker'],['😁','Тағы күлімде.','smile'],['😗','Тағы соз.','pucker'],['😌','Ерінді босатып, демал.','relax']]}],
+   [{t:'steps',cam:true,q:'Бетіңмен көрсет те, атын айт.',items:[['😊','Қуаныш. «Мен қуаныштымын!»','smile'],['😢','Мұң. «Мен мұңаймын.»','sad'],['😮','Таңдану. «О, қандай керемет!»','surprise'],['😠','Ашу. «Мен ренжідім.»','angry'],['😊','Енді тағы күлімде!','smile']]}],
   ]},
  {id:7, ic:'🕰️', title:'«Сағат тілі»',
   d:['Сағаттың тілін табады.','Тілді оңға және солға қозғалту жаттығуын орындайды.','Экрандағы бағыт бойынша тіл қимылдарын ретімен қайталайды.'],
   levels:[
    [{t:'choose',q:'Сағатты тап.',opts:[['⚽','Доп'],['🕰️','Сағат'],['🍎','Алма'],['📚','Кітап']],a:1},
     {t:'choose',q:'Сағаттың тілдері қай жерде? Тілі бар суретті тап.',opts:[['🍽️','Тәрелке'],['🍪','Печенье'],['🕒','Тілі бар сағат'],['🌕','Ай']],a:2}],
-   [{t:'steps',q:'Сағаттың тілі сияқты: оңға — солға.',anim:'pend',items:[['😮','Ауызды сәл аш, күлімде.'],['➡️','Тілдің ұшымен оң жақ ауыз бұрышына тигіз.'],['⬅️','Енді сол жақ бұрышқа тигіз.'],['🕰️','Тик — так. Асықпай, 5 рет.'],['😌','Тілді ауызға жасырып, демал.']]}],
-   [{t:'steps',q:'Көрсеткіге қара да, тілді сол жаққа апар.',items:[['⬅️','Солға'],['➡️','Оңға'],['⬆️','Жоғары — жоғарғы ерінге'],['⬇️','Төмен — иекке қарай'],['➡️','Оңға'],['⬆️','Жоғары'],['😌','Демал']]}],
+   [{t:'steps',cam:true,q:'Сағаттың тілі сияқты: оңға — солға.',anim:'pend',items:[['😮','Ауызды сәл аш, күлімде.','open'],['➡️','Тілдің ұшымен оң жақ ауыз бұрышына тигіз.','side'],['⬅️','Енді сол жақ бұрышқа тигіз.','side'],['🕰️','Тик — так. Асықпай, 5 рет.'],['😌','Тілді ауызға жасырып, демал.','relax']]}],
+   [{t:'steps',cam:true,q:'Көрсеткіге қара да, тілді сол жаққа апар.',items:[['⬅️','Солға','side'],['➡️','Оңға','side'],['⬆️','Жоғары — жоғарғы ерінге'],['⬇️','Төмен — иекке қарай','open'],['➡️','Оңға','side'],['⬆️','Жоғары'],['😌','Демал','relax']]}],
   ]},
  {id:8, ic:'🐎', title:'«Ат шауып келеді»',
   d:['Жануарлардың ішінен атты табады.','Аттың шабысына ұқсас тіл қимылын орындайды.','Ат туралы сурет бойынша 2–3 сөйлем айтады.'],
   levels:[
    [{t:'choose',q:'Атты тап.',opts:[['🐄','Сиыр'],['🐑','Қой'],['🐫','Түйе'],['🐎','Ат']],a:3},
     {t:'choose',q:'Аттың басы қайсы?',opts:[['🐶','Ит'],['🐴','Ат'],['🐱','Мысық'],['🐻','Аю']],a:1}],
-   [{t:'steps',q:'Ат тұяғының дыбысын жасайық.',snd:'hoof',items:[['😮','Ауызды аш, күлімде.'],['👅','Тілдің жалпақ ұшын таңдайға жабыстыр.'],['🐴','«Тық» еткізіп түсір. Ат ақырын жүреді.'],['🐎','Ат шауып келеді: тық-тық-тық! 5 рет.'],['😌','Ат тоқтады. Демал.']]}],
+   [{t:'steps',cam:true,q:'Ат тұяғының дыбысын жасайық.',snd:'hoof',items:[['😮','Ауызды аш, күлімде.','open'],['👅','Тілдің жалпақ ұшын таңдайға жабыстыр.'],['🐴','«Тық» еткізіп түсір. Ат ақырын жүреді.'],['🐎','Ат шауып келеді: тық-тық-тық! 5 рет.'],['😌','Ат тоқтады. Демал.','relax']]}],
    [{t:'speak',q:'Ат туралы 2–3 сөйлем айт.',cues:[['🐎','Ат'],['🌾','Шөп'],['🏞️','Дала']],help:['Бұл — ат.','Аттың жалы мен құйрығы ұзын.','Ат шөп жейді.','Ат далада жылдам шабады.']}],
   ]},
  {id:9, ic:'🍓', title:'«Тәтті тосап»',
   d:['Тосаптың суретін таңдайды.','Жоғарғы ерінді жалау қимылын орындайды.','Жемістерді атап, қай тосапты жақсы көретінін айтады.'],
   levels:[
    [{t:'choose',q:'Тосапты тап.',opts:[['🥛','Сүт'],['🍞','Нан'],['🫙🍓','Тосап'],['🧀','Ірімшік']],a:2}],
-   [{t:'steps',q:'Тәтті тосапты жалайық!',items:[['😮','Ауызды аш.'],['🍓','Жоғарғы ерінде тосап қалды деп ойла.'],['👅','Тілдің кең ұшымен жоғарғы ерінді жала: бір шетінен екінші шетіне.'],['😋','Тағы 3 рет, асықпай.'],['😌','Тілді жасырып, демал.']]}],
+   [{t:'steps',cam:true,q:'Тәтті тосапты жалайық!',items:[['😮','Ауызды аш.','open'],['🍓','Жоғарғы ерінде тосап қалды деп ойла.'],['👅','Тілдің кең ұшымен жоғарғы ерінді жала: бір шетінен екінші шетіне.'],['😋','Тағы 3 рет, асықпай.'],['😌','Тілді жасырып, демал.','relax']]}],
    [{t:'reveal',q:'Жемістерді ата. Сосын басып, тексер.',items:[['🍓','Құлпынай'],['🍎','Алма'],['🍒','Шие'],['🍑','Шабдалы'],['🍐','Алмұрт']]},
     {t:'speak',q:'Сен қай тосапты жақсы көресің? Неге?',cues:[['🍓',''],['🍎',''],['🍒',''],['🍑','']],help:['Мен құлпынай тосабын жақсы көремін.','Себебі ол өте тәтті.','Әжем шие тосабын қайнатады.']}],
   ]},
@@ -445,7 +463,7 @@ const GAMES = [
   d:['Жануарлардың суреттерін сәйкестендіреді.','Жануарлардың ауыз қимылдарын бейнелейді.','Жануарларды сипаттап, олардың ерекшеліктерін айтады.'],
   levels:[
    [{t:'match',q:'Кім не жейді? Жұбын тап.',pairs:[[['🐰','Қоян'],['🥕','Сәбіз']],[['🐱','Мысық'],['🥛','Сүт']],[['🐶','Ит'],['🦴','Сүйек']],[['🐻','Аю'],['🍯','Бал']]]}],
-   [{t:'steps',q:'Жануарлардың ауыз қимылын қайтала.',items:[['🐟','Балық: ерінді ақырын ашып-жап, дыбыссыз.'],['🐸','Бақа: кең күлімде.'],['🐘','Піл: ерінді түтікше етіп алға соз.'],['🐱','Мысық: тілді шығарып, сүт ішкендей ішке тарт.'],['🐻','Аю: ауызды кең ашып, есне.']]}],
+   [{t:'steps',cam:true,q:'Жануарлардың ауыз қимылын қайтала.',items:[['🐟','Балық: ерінді ақырын ашып-жап, дыбыссыз.','open'],['🐸','Бақа: кең күлімде.','smile'],['🐘','Піл: ерінді түтікше етіп алға соз.','pucker'],['🐱','Мысық: тілді шығарып, сүт ішкендей ішке тарт.','open'],['🐻','Аю: ауызды кең ашып, есне.','yawn']]}],
    [{t:'speak',q:'Жануарды сипатта: қандай? Не жейді? Қалай қимылдайды?',cues:[['🐻','Аю'],['🐱','Мысық'],['🐟','Балық']],help:['Аю үлкен әрі қоңыр. Ол бал жейді.','Мысық кішкентай, жүні жұмсақ. Ол сүт ішеді.','Балық суда жүзеді. Оның құйрығы бар.']}],
   ]},
  /* ---------- III. Ырғақ ---------- */
@@ -477,7 +495,7 @@ const GAMES = [
    [{t:'sound',snd:'bellHi',q:'Қоңырау қалай соғылды?',opts:[['🔔⬆️','Жіңішке (жоғары)'],['🔔⬇️','Жуан (төмен)']],a:0},
     {t:'sound',snd:'bellLo',q:'Ал енді?',opts:[['🔔⬆️','Жіңішке (жоғары)'],['🔔⬇️','Жуан (төмен)']],a:1},
     {t:'sound',snd:'bellLo',q:'Тағы тыңда.',opts:[['🔔⬆️','Жіңішке (жоғары)'],['🔔⬇️','Жуан (төмен)']],a:1}],
-   [{t:'steps',q:'Бір сөйлемді әртүрлі айтып көр.',items:[['😊','Қуанып айт: «Анам келді!»'],['❓','Сұрап айт: «Анам келді ме?»'],['🤫','Ақырын айт: «Анам келді.»'],['😮','Таңданып айт: «Күн шықты!»'],['❓','Сұрап айт: «Күн шықты ма?»']]}],
+   [{t:'steps',q:'Бір сөйлемді әртүрлі айтып көр.',items:[['😊','Қуанып айт: «Анам келді!»','say:Анам келді'],['❓','Сұрап айт: «Анам келді ме?»','say:Анам келді ме'],['🤫','Ақырын айт: «Анам келді.»','say:Анам келді'],['😮','Таңданып айт: «Күн шықты!»','say:Күн шықты'],['❓','Сұрап айт: «Күн шықты ма?»','say:Күн шықты ма']]}],
   ]},
  {id:14, ic:'👏', title:'«Сөзді бөліп айт»',
   d:['Бір буынды сөздерді суреттен таңдайды.','Сөздерді буынға бөліп, шапалақпен көрсетеді.','Суреттерді атап, сөздерді буын санына қарай топтастырады.'],
@@ -668,7 +686,7 @@ const GAMES = [
   levels:[
    [{t:'sort',q:'Көлік қайда жүреді?',groups:[['🛣️','Жерде'],['🌊','Суда'],['☁️','Аспанда']],
       items:[['🚗','Машина',0],['🚌','Автобус',0],['🚲','Велосипед',0],['⛵','Желкенді қайық',1],['🚢','Кеме',1],['✈️','Ұшақ',2],['🚁','Тікұшақ',2]]}],
-   [{t:'steps',q:'Сен — жүргізушісің. Жолаушыдан сұра.',hints:true,items:[['🧓','Жолаушыдан қайда баратынын сұра.|Сіз қайда барасыз?'],['🎫','Билеті бар ма — сұра.|Билетіңіз бар ма?'],['🪑','Отыруды ұсын.|Отырыңыз!'],['🚏','Аялдамаға келдік. Сұра.|Осы аялдамада түсесіз бе?']]}],
+   [{t:'steps',q:'Сен — жүргізушісің. Жолаушыдан сұра.',hints:true,items:[['🧓','Жолаушыдан қайда баратынын сұра.|Сіз қайда барасыз?','say:қайда барасыз'],['🎫','Билеті бар ма — сұра.|Билетіңіз бар ма?','say:билетіңіз бар ма'],['🪑','Отыруды ұсын.|Отырыңыз!','say:отырыңыз'],['🚏','Аялдамаға келдік. Сұра.|Осы аялдамада түсесіз бе?','say:аялдамада түсесіз бе']]}],
    [{t:'dialog',q:'Сен — жүргізушісің. Жолаушымен сөйлес.',lines:[
       {w:'🧓',n:'Жолаушы',s:'Сәлеметсіз бе! Бұл автобус саябаққа бара ма?'},
       {me:['Сәлеметсіз бе! Иә, барады. Отырыңыз!']},
@@ -773,6 +791,162 @@ const pick=a=>a[Math.floor(Math.random()*a.length)];
 const wiggle=el=>{ el.classList.remove('no'); void el.offsetWidth; el.classList.add('no'); play('soft'); };
 
 /* =========================================================
+   SPEECH RECOGNITION (Kazakh, browser Web Speech API)
+   ========================================================= */
+const SRClass = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+let SR_CUR=null;
+function stopListening(){ if(SR_CUR){ const r=SR_CUR; SR_CUR=null; r.onend=null; r.onresult=null; r.onerror=null; try{ r.abort() }catch(e){} } }
+const STOPW=new Set(['мен','сен','ол','бұл','сосын','және','әрі','біз','оның','менің','сенің','бір','деп','дейді','мына','енді','ал','да','де','та','те','мен','бар']);
+const norm=s=>(s||'').toLowerCase().replace(/ё/g,'е').replace(/[^\p{L}\p{N}\s]/gu,' ').replace(/\s+/g,' ').trim();
+const words=s=>{ const n=norm(s); return n?n.split(' '):[]; };
+function lev(a,b){ const m=a.length,n=b.length; if(!m||!n) return m||n; let prev=Array.from({length:n+1},(_,j)=>j);
+  for(let i=1;i<=m;i++){ const cur=[i]; for(let j=1;j<=n;j++) cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1)); prev=cur; } return prev[n]; }
+function wsim(a,b){ if(a===b) return 1; const m=Math.min(a.length,b.length);
+  if(m>=4){ let p=0; while(p<m&&a[p]===b[p]) p++; if(p>=4) return .9; }   // Kazakh endings vary: same stem counts
+  return 1-lev(a,b)/Math.max(a.length,b.length); }
+const hasWord=(hw,w)=>hw.some(x=>wsim(x,w)>=.75);
+function phraseScore(heard,expected){
+  const ew=words(expected), hw=words(heard);
+  if(!ew.length) return hw.length?1:0;
+  let sc=ew.filter(w=>hasWord(hw,w)).length/ew.length;
+  if(/\.\.\./.test(expected) && hw.length<=ew.length) sc=Math.min(sc,.4);  // "Менің атым — ..." needs the name too
+  return sc;
+}
+function keywordsOf(t){
+  if(t.kw) return t.kw.map(norm);
+  const src=[...(t.help||[]),...((t.cues||[]).map(c=>c[1]||''))].join(' ');
+  return [...new Set(words(src).filter(w=>w.length>=3&&!STOPW.has(w)))];
+}
+
+/* micPanel: listens, checks what the child said, says "дұрыс" or "қайтадан байқап көр" */
+function micPanel(o){
+  const box=h('div',{class:'mic'});
+  if(!SRClass){
+    const ok=h('button',{class:'btn primary'},'🗣️ Айтып болды');
+    ok.onclick=()=>{ ok.disabled=true; play('yay'); o.onPass(''); };
+    box.append(h('div',{class:'micst'},'🎤 Бұл браузер дауысты танымайды. Дауысты тану үшін сайтты Chrome браузерінде ашыңыз.'),h('div',{class:'heard'},'Бала айтқаннан кейін ересек адам батырманы бассын.'),ok);
+    return box;
+  }
+  const btn=h('button',{class:'micbtn','aria-label':'Сөйлеу'},'🎤');
+  const st=h('div',{class:'micst'},'Микрофон қосылуда...');
+  const heard=h('div',{class:'heard'});
+  const msg=h('div',{class:'msg kind'});
+  const skip=h('button',{class:'hint-tgl',hidden:true},'Ересек: келесіге өту →');
+  box.append(h('div',{class:'microw'},btn,h('div',{style:'min-width:0'},st,heard)),msg,skip);
+  let tries=0, passed=false, blocked=false;
+  const max=o.maxTries||3;
+  function pass(text){ if(passed) return; passed=true; stopListening(); btn.classList.remove('on'); btn.disabled=true;
+    st.textContent='✓'; msg.className='msg good'; msg.textContent= text? 'Дұрыс! '+pick(PRAISE) : pick(PRAISE); play('yay'); o.onPass(text); }
+  function fail(text){ tries++; play('soft'); msg.className='msg kind';
+    msg.textContent= text? (o.failMsg||'Басқаша естілді. Қайтадан байқап көр 🙂') : 'Ештеңе естілмеді. Қайтадан байқап көр 🙂';
+    st.textContent='🎤 Микрофонды басып, қайтадан айт.';
+    if(tries>=max) skip.hidden=false; else setTimeout(start,1800); }
+  skip.onclick=()=>{ if(o.onSkip) o.onSkip(); pass(''); };
+  function start(){
+    if(passed||blocked||!box.isConnected) return;
+    stopListening();
+    const r=new SRClass(); SR_CUR=r; r.lang='kk-KZ'; r.interimResults=true; r.maxAlternatives=5; r.continuous=false;
+    let fin='', got=false;
+    r.onstart=()=>{ btn.classList.add('on'); st.textContent='Тыңдап тұрмын... Асықпай сөйле 🙂'; };
+    r.onresult=e=>{
+      let interim='';
+      for(let i=e.resultIndex;i<e.results.length;i++){ const res=e.results[i];
+        if(res.isFinal){ got=true; const alts=[...res].map(a=>a.transcript);
+          const hit=alts.map(a=>(fin+' '+a).trim()).find(c=>o.check(c));
+          if(hit){ heard.textContent='Естігенім: «'+hit+'»'; pass(hit); return; }
+          fin=(fin+' '+alts[0]).trim();
+        } else interim+=res[0].transcript; }
+      heard.textContent='Естігенім: «'+(fin+' '+interim).trim()+'»';
+    };
+    r.onerror=e=>{
+      if(e.error==='not-allowed'||e.error==='service-not-allowed'){ blocked=true; st.textContent='Микрофонға рұқсат берілмеді. Браузердің мекенжай жолағындағы 🔒 белгісінен микрофонды рұқсат етіңіз.'; skip.hidden=false; skip.textContent='Ересек: бала айтты, келесіге өту →'; }
+      else if(e.error==='network'){ blocked=true; st.textContent='Дауысты тану үшін интернет керек.'; skip.hidden=false; }
+      else if(e.error==='language-not-supported'){ blocked=true; st.textContent='Бұл құрылғы қазақ тілінде дауысты танымайды.'; skip.hidden=false; }
+    };
+    r.onend=()=>{ if(SR_CUR===r) SR_CUR=null; btn.classList.remove('on'); if(passed||blocked) return; fail(got?fin:''); if(fin) heard.textContent='Естігенім: «'+fin+'»'; };
+    try{ r.start(); }catch(e){ st.textContent='🎤 Микрофонды басып, сөйле.'; }
+  }
+  btn.onclick=start;
+  if(o.auto!==false) setTimeout(start,o.delay||500);
+  return box;
+}
+
+/* =========================================================
+   FRONT CAMERA + FACE TRACKING (MediaPipe Face Landmarker)
+   ========================================================= */
+const MP='https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
+let FLP=null;
+function getLandmarker(){
+  if(!FLP) FLP=(async()=>{
+    const v=await import(MP+'/vision_bundle.mjs');
+    const fs=await v.FilesetResolver.forVisionTasks(MP+'/wasm');
+    const opts=d=>({baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task',delegate:d},outputFaceBlendshapes:true,runningMode:'VIDEO',numFaces:1});
+    try{ return await v.FaceLandmarker.createFromOptions(fs,opts('GPU')); }catch(e){ return await v.FaceLandmarker.createFromOptions(fs,opts('CPU')); }
+  })().catch(e=>{ FLP=null; throw e; });
+  return FLP;
+}
+const avg=(b,x,y)=>((b[x]||0)+(b[y]||0))/2;
+const DET={
+  smile:  b=>avg(b,'mouthSmileLeft','mouthSmileRight')>.45,
+  pucker: b=>(b.mouthPucker||0)>.45||(b.mouthFunnel||0)>.35,
+  open:   b=>(b.jawOpen||0)>.22,
+  yawn:   b=>(b.jawOpen||0)>.5,
+  relax:  b=>(b.jawOpen||0)<.15&&avg(b,'mouthSmileLeft','mouthSmileRight')<.25&&(b.mouthPucker||0)<.3,
+  side:   b=>Math.max(b.mouthLeft||0,b.mouthRight||0)>.2,
+  sad:    b=>avg(b,'mouthFrownLeft','mouthFrownRight')>.2||((b.browInnerUp||0)>.4&&avg(b,'mouthSmileLeft','mouthSmileRight')<.15),
+  surprise:b=>(b.jawOpen||0)>.2&&((b.browInnerUp||0)>.3||avg(b,'eyeWideLeft','eyeWideRight')>.25),
+  angry:  b=>avg(b,'browDownLeft','browDownRight')>.3,
+};
+const DET_HELP={smile:'кең күлімдеуді',pucker:'ерінді алға созуды',open:'ауыздың ашылуын',yawn:'ауызды кең ашуды',relax:'ерінді босатуды',side:'ауыз бұрышының қимылын',sad:'мұңды бетті',surprise:'таңданған бетті',angry:'ашулы бетті'};
+
+function camView(){
+  const video=h('video',{playsinline:true,muted:true,autoplay:true});
+  video.muted=true;
+  const st=h('div',{class:'camst'},'📷 Алдыңғы камераға рұқсат беріңіз...');
+  const bar=h('div',{class:'hold'});
+  const el=h('div',{class:'cam'},video,bar,st);
+  const api={el, ready:false, tracking:false, failed:false, watching:null};
+  let stream=null, fl=null, lastTs=0;
+  (async()=>{
+    try{
+      if(!navigator.mediaDevices?.getUserMedia) throw new Error('nocam');
+      stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480}},audio:false});
+      if(!el.isConnected){ stream.getTracks().forEach(x=>x.stop()); return; }
+      video.srcObject=stream; await video.play().catch(()=>{});
+      api.ready=true; st.textContent='Камера дайын. Бет-қимылды тану жүктелуде...';
+      try{ fl=await getLandmarker(); api.tracking=true; st.textContent='Бетіңді камераға көрсет 🙂'; }
+      catch(e){ st.textContent='Бет-қимылды тану жүктелмеді (интернетті тексеріңіз). Камераны айна ретінде қолданыңыз.'; api.failed=true; api.onFail&&api.onFail(); }
+    }catch(e){ api.failed=true; el.classList.add('off'); st.textContent='📷 Камера қосылмады. Камераға рұқсат беріңіз немесе айнаның алдында жасаңыз.'; api.onFail&&api.onFail(); }
+  })();
+  let hold=0, armed=true, prevOk=false, lastT=performance.now();
+  const loop=now=>{
+    if(!el.isConnected){ if(stream) stream.getTracks().forEach(x=>x.stop()); return; }
+    const dt=Math.min(.1,(now-lastT)/1000); lastT=now;
+    if(fl&&api.ready&&video.readyState>=2&&now>lastTs){
+      lastTs=now;
+      let r=null; try{ r=fl.detectForVideo(video,now); }catch(e){}
+      const cats=r&&r.faceBlendshapes&&r.faceBlendshapes[0]&&r.faceBlendshapes[0].categories;
+      const w=api.watching;
+      if(!cats){ hold=0; bar.style.width='0'; if(w) st.textContent='Бетіңді камераға көрсет 🙂'; }
+      else if(w){
+        const b={}; cats.forEach(c=>b[c.categoryName]=c.score);
+        const ok=DET[w.chk](b);
+        if(!ok) armed=true;
+        if(ok&&armed){ hold+=dt; st.textContent='Жарайсың, солай ұста...'; } else { hold=Math.max(0,hold-dt*2); st.textContent='Камера '+DET_HELP[w.chk]+' күтіп тұр 👀'; }
+        bar.style.width=Math.min(100,hold/0.7*100)+'%';
+        if(hold>=0.7){ const cb=w.cb; api.watching=null; hold=0; bar.style.width='0'; el.classList.add('okflash'); setTimeout(()=>el.classList.remove('okflash'),600); st.textContent='✓ Дұрыс!'; cb(); }
+      } else st.textContent='Бетің көрініп тұр 🙂';
+    }
+    requestAnimationFrame(loop);
+  };
+  requestAnimationFrame(loop);
+  /* watch(chk, cb): fires cb once the expression is held; `fresh` = must change from the previous pose first */
+  api.watch=(chk,cb,fresh)=>{ hold=0; armed=!fresh; api.watching={chk,cb}; };
+  api.unwatch=()=>{ api.watching=null; };
+  return api;
+}
+
+/* =========================================================
    TASK RENDERERS — each gets (task, root, done)
    ========================================================= */
 const R = {};
@@ -795,8 +969,8 @@ R.choose=(t,root,done)=>{
         if(right){ b.classList.add('ok'); play('tick');
           if(multi){ got.add(i); if(got.size<need.size){ msg.className='msg good'; msg.textContent='Дұрыс! Тағы '+(need.size-got.size)+' қалды.'; return; } }
           msg.className='msg good'; msg.textContent=pick(PRAISE); play('yay');
-          if(t.say) root.insertBefore(sayBox('Енді дауыстап айтып бер:',[t.say]),msg.nextSibling);
-          done();
+          if(t.say){ root.insertBefore(sayBox('Енді дауыстап айтып бер:',[t.say]),msg.nextSibling); root.append(micPanel({check:x=>phraseScore(x,t.say)>=.5,onPass:()=>done()})); }
+          else done();
         } else { wiggle(b); msg.className='msg kind'; msg.textContent=pick(KIND); }
       };
       opts.append(b);
@@ -814,34 +988,6 @@ function sayBox(title,lines,open=true){
   const box=h('div',{class:'help'},h('b',{},title),h('ul',{},lines.map(l=>h('li',{},l))));
   return box;
 }
-
-R.speak=(t,root,done)=>{
-  root.append(qline(t.q));
-  const body=h('div',{style:'display:flex;flex-direction:column;gap:14px'});
-  const show=()=>{
-    if(t.scene) body.append(parkScene());
-    if(t.fav){ let f='🧸'; try{ f=localStorage.getItem('es-fav')||'🧸' }catch(e){} body.append(h('div',{class:'bigpic'},glyph(f,110))); }
-    if(t.pic && !t.chest) body.append(h('div',{class:'bigpic'},glyph(t.pic,110)));
-    if(t.cues) body.append(h('div',{class:'cues'},t.cues.map(c=>h('div',{class:'cue'},glyph(c[0],56),c[1]?h('small',{},c[1]):null))));
-    if(t.snd){ body.append(h('button',{class:'btn',style:'align-self:center',onclick:()=>play(t.snd)},'🔊 Тыңдау')); setTimeout(()=>play(t.snd),300); }
-    if(t.plan) body.append(h('div',{class:'help'},h('b',{},'Әңгіме жоспары:'),h('ul',{},t.plan.map(p=>h('li',{},p)))));
-    if(t.help){
-      const hb=sayBox('Мысал:',t.help); hb.hidden=true;
-      const tg=h('button',{class:'hint-tgl',onclick:()=>{ hb.hidden=!hb.hidden; tg.textContent=hb.hidden?'💡 Көмек керек пе? Мысалды көру':'Мысалды жасыру'; }},'💡 Көмек керек пе? Мысалды көру');
-      body.append(tg,hb);
-    }
-    body.append(h('p',{class:'tip'},'🕊️ Асықпа. Ойлануға уақыт жеткілікті. Өз сөзіңмен айт.'));
-    const ok=h('button',{class:'btn primary',style:'align-self:flex-start'},'🗣️ Айтып болдым');
-    ok.onclick=()=>{ ok.disabled=true; ok.textContent='⭐ '+pick(PRAISE); play('yay'); done(); };
-    body.append(ok);
-  };
-  if(t.chest){
-    const chest=h('button',{class:'chest','aria-label':'Сандықты ашу'},'🧰');
-    root.append(chest,body);
-    body.append(h('p',{class:'tip'},'Сандықты басып аш.'));
-    chest.onclick=()=>{ chest.classList.add('open'); chest.replaceChildren(glyph(t.pic,110)); chest.disabled=true; body.replaceChildren(); play('yay'); show(); };
-  } else { root.append(body); show(); }
-};
 
 function parkScene(onTap){
   const sc=h('div',{class:'scene',role:'img','aria-label':'Саябақ суреті'});
@@ -920,24 +1066,6 @@ R.breath=(t,root,done)=>{
     requestAnimationFrame(step);
   };
   requestAnimationFrame(step);
-};
-
-R.steps=(t,root,done)=>{
-  root.append(qline(t.q));
-  let i=0; const box=h('div'); const btnRow=h('div',{class:'btn-row'});
-  const nextB=h('button',{class:'btn primary'},'✓ Жасадым');
-  const sndB=t.snd?h('button',{class:'btn',onclick:()=>play(t.snd)},'🔊 Дыбысын тыңда'):null;
-  btnRow.append(nextB); if(sndB) btnRow.append(sndB);
-  const draw=()=>{
-    const [g,txt]=t.items[i]; const [main,hint]=txt.split('|');
-    const gl=glyph(g,84); if(t.anim==='pend' && (g==='🕰️')) gl.classList.add('pend');
-    const p=h('div',{},h('div',{class:'cnt'},`${i+1} / ${t.items.length}`),h('p',{},main));
-    if(hint){ const hb=h('div',{class:'help',hidden:true},'Былай сұрауға болады: ',h('b',{},hint)); const tg=h('button',{class:'hint-tgl',onclick:()=>{hb.hidden=!hb.hidden}},'💡 Қалай сұраймыз?'); p.append(tg,hb); }
-    box.replaceChildren(h('div',{class:'step'},gl,p));
-    if(t.anim==='pend' && g!=='🕰️'){ /* small swinging clock reminder */ box.firstChild.append(h('span',{class:'pend',style:'font-size:40px;grid-column:1/-1;justify-self:center'},'🕰️')); }
-  };
-  nextB.onclick=()=>{ play('tick'); i++; if(i<t.items.length){ draw(); } else { nextB.disabled=true; nextB.textContent='⭐ '+pick(PRAISE); play('yay'); done(); } };
-  draw(); root.append(box,btnRow,h('p',{class:'tip'},'🪞 Айнаның алдында жасаған ыңғайлы. Асықпа.'));
 };
 
 R.sort=(t,root,done)=>{
@@ -1027,20 +1155,6 @@ R.rhythm=(t,root,done)=>{
   root.append(beats,h('div',{class:'btn-row',style:'justify-content:center'},listen),clap,msg);
 };
 
-R.beat=(t,root,done)=>{
-  root.append(qline(t.q));
-  const parts=[]; t.text.split(' ').forEach((w,wi)=>{ if(wi) parts.push(null); w.split('-').forEach(s=>parts.push(s)); });
-  const line=h('div',{class:'sylls'}); const spans=[];
-  parts.forEach(p=>{ if(p===null) line.append(h('span',{class:'sp'})); else if(p==='—') line.append(h('span',{class:'sp'},'')); else { const s=h('span',{},p); spans.push(s); line.append(s); } });
-  const msg=h('div',{class:'msg kind'},'«Бастау» бас. Жарық жанған буынды бірге айт.');
-  const go=h('button',{class:'btn primary'},'▶ Бастау'); let running=false, rounds=0;
-  const ok=h('button',{class:'btn',hidden:true},'🗣️ Айтып болдым');
-  go.onclick=()=>{ if(running) return; running=true; ac(); spans.forEach((s,i)=>setTimeout(()=>{ spans.forEach(x=>x.classList.remove('lit')); s.classList.add('lit'); play('tick'); },i*900));
-    setTimeout(()=>{ spans.forEach(x=>x.classList.remove('lit')); running=false; rounds++; go.textContent='↻ Тағы бір рет'; ok.hidden=false; },spans.length*900+300); };
-  ok.onclick=()=>{ ok.disabled=true; msg.className='msg good'; msg.textContent=pick(PRAISE)+' Бірқалыпты, әдемі айттың!'; play('yay'); done(); };
-  root.append(line,h('div',{class:'btn-row',style:'justify-content:center'},go,ok),msg,h('p',{class:'tip'},'🐢 Баяу, бірқалыпты. Жылдамдық маңызды емес.'));
-};
-
 R.syll=(t,root,done)=>{
   root.append(qline(t.q));
   let i=0; const area=h('div',{style:'display:flex;flex-direction:column;gap:12px;align-items:center'}); const msg=h('div',{class:'msg kind'});
@@ -1058,28 +1172,75 @@ R.syll=(t,root,done)=>{
   draw(); root.append(area,msg);
 };
 
-R.build=(t,root,done)=>{
+R.steps=(t,root,done)=>{
   root.append(qline(t.q));
-  if(t.pic) root.append(h('div',{class:'bigpic',style:'font-size:80px'},glyph(t.pic,80)));
-  let k=0; const msg=h('div',{class:'msg kind'},'Бірінші сөзді бас.');
-  const slots=h('div',{class:'slots wslots'}); const ss=t.words.map((_,i)=>{ const s=h('div',{class:'slot'},h('span',{class:'ix'},i+1)); slots.append(s); return s; });
-  const pool=h('div',{class:'pool'});
-  shuffleNot(t.words.map((_,i)=>i)).forEach(i=>{ const c=h('button',{class:'chipitem',style:'font-size:20px;padding:12px 16px'},t.words[i]);
-    c.onclick=()=>{ if(i===k){ ss[k].classList.add('filled'); ss[k].append(t.words[i]); c.remove(); k++; play('tick');
-        if(k===t.words.length){ const sent=t.words.join(' ')+'.'; msg.className='msg good'; msg.textContent=pick(PRAISE)+' Енді дауыстап айт: «'+sent+'»'; play('yay'); speak(sent); done(); } else { msg.className='msg good'; msg.textContent='Дұрыс! Келесі сөз?'; } }
-      else { wiggle(c); msg.className='msg kind'; msg.textContent='Сөйлемді айтып көр, қай сөз келеді? 🙂'; } };
-    pool.append(c); });
-  root.append(slots,pool,msg);
+  const cam=t.cam?camView():null;
+  if(cam) root.append(cam.el);
+  let i=0, prevChk=null; const box=h('div'); const ctl=h('div',{class:'stepctl'});
+  const sndB=t.snd?h('button',{class:'btn',onclick:()=>play(t.snd)},'🔊 Дыбысын тыңда'):null;
+  let skipTimer=null;
+  const finishStep=()=>{ clearTimeout(skipTimer); cam&&cam.unwatch(); play('tick'); i++; if(i<t.items.length) draw(); else { ctl.replaceChildren(h('div',{class:'msg good'},'⭐ '+pick(PRAISE)+' Бәрін орындадың!')); play('yay'); done(); } };
+  const manual=label=>{ const b=h('button',{class:'btn primary'},label||'✓ Жасадым'); b.onclick=()=>{ b.disabled=true; finishStep(); }; return b; };
+  const draw=()=>{
+    const [g,txt,chk]=t.items[i]; const [main,hint]=txt.split('|');
+    const gl=glyph(g,84); if(t.anim==='pend' && g==='🕰️') gl.classList.add('pend');
+    const p=h('div',{},h('div',{class:'cnt'},`${i+1} / ${t.items.length}`),h('p',{},main));
+    if(hint){ const hb=h('div',{class:'help',hidden:true},'Былай сұрауға болады: ',h('b',{},hint)); const tg=h('button',{class:'hint-tgl',onclick:()=>{hb.hidden=!hb.hidden}},'💡 Қалай айтамыз?'); p.append(tg,hb); }
+    box.replaceChildren(h('div',{class:'step'},gl,p));
+    ctl.replaceChildren(); if(sndB) ctl.append(h('div',{class:'btn-row'},sndB));
+    clearTimeout(skipTimer);
+    if(chk&&chk.startsWith('say:')){
+      const exp=chk.slice(4);
+      ctl.append(micPanel({check:x=>phraseScore(x,exp)>=.6,onPass:()=>setTimeout(finishStep,900)}));
+    } else if(chk&&cam&&!cam.failed){
+      const note=h('div',{class:'msg kind'},'');
+      const sk=h('button',{class:'hint-tgl',hidden:true},'Ересек: келесіге өту →'); sk.onclick=finishStep;
+      ctl.append(note,sk);
+      cam.watch(chk,()=>{ note.className='msg good'; note.textContent=pick(PRAISE); setTimeout(finishStep,700); }, chk===prevChk);
+      cam.onFail=()=>{ ctl.replaceChildren(manual()); };
+      skipTimer=setTimeout(()=>{ if(!ctl.isConnected) return; note.textContent='Қайтадан байқап көр 🙂 Бетің камераға толық көрініп тұрсын.'; sk.hidden=false; },12000);
+    } else {
+      if(cam) cam.onFail=null;
+      ctl.append(manual(), chk||!cam? null : h('div',{class:'tip'},'👀 Бұл қимылды камера көрмейді — ересек адам бақылап, батырманы бассын.'));
+    }
+    prevChk=chk||null;
+  };
+  draw(); root.append(box,ctl);
+  if(!cam) root.append(h('p',{class:'tip'},'🪞 Айнаның алдында жасаған ыңғайлы. Асықпа.'));
 };
 
-R.reveal=(t,root,done)=>{
+R.speak=(t,root,done)=>{
   root.append(qline(t.q));
-  let left=t.items.length; const msg=h('div',{class:'msg kind'});
-  const grid=h('div',{class:'opts'});
-  t.items.forEach(it=>{ const lab=h('span',{style:'visibility:hidden'},it[1]); const b=h('button',{class:'opt'},glyph(it[0]),lab);
-    b.onclick=()=>{ if(b.classList.contains('ok')) return; lab.style.visibility='visible'; b.classList.add('ok'); play('tick'); left--; speak(it[1]); if(!left){ msg.className='msg good'; msg.textContent=pick(PRAISE)+' Бәрін атадың!'; play('yay'); done(); } };
-    grid.append(b); });
-  root.append(grid,msg);
+  const body=h('div',{style:'display:flex;flex-direction:column;gap:14px'});
+  const show=()=>{
+    if(t.scene) body.append(parkScene());
+    if(t.fav){ let f='🧸'; try{ f=localStorage.getItem('es-fav')||'🧸' }catch(e){} body.append(h('div',{class:'bigpic'},glyph(f,110))); }
+    if(t.pic && !t.chest) body.append(h('div',{class:'bigpic'},glyph(t.pic,110)));
+    if(t.cues) body.append(h('div',{class:'cues'},t.cues.map(c=>h('div',{class:'cue'},glyph(c[0],56),c[1]?h('small',{},c[1]):null))));
+    if(t.snd){ body.append(h('button',{class:'btn',style:'align-self:center',onclick:()=>play(t.snd)},'🔊 Тыңдау')); setTimeout(()=>play(t.snd),300); }
+    if(t.plan) body.append(h('div',{class:'help'},h('b',{},'Әңгіме жоспары:'),h('ul',{},t.plan.map(p=>h('li',{},p)))));
+    if(t.help){
+      const hb=sayBox('Мысал:',t.help); hb.hidden=true;
+      const tg=h('button',{class:'hint-tgl',onclick:()=>{ hb.hidden=!hb.hidden; tg.textContent=hb.hidden?'💡 Көмек керек пе? Мысалды көру':'Мысалды жасыру'; }},'💡 Көмек керек пе? Мысалды көру');
+      body.append(tg,hb);
+    }
+    const kw=keywordsOf(t);
+    const story=(t.help&&t.help.length>=3)||t.plan;
+    const minW=t.min || (story?4:t.snd?1:2);
+    const open=t.fav;
+    body.append(h('p',{class:'tip'},'🕊️ Асықпа. Ойлануға уақыт жеткілікті. Өз сөзіңмен айт.'));
+    body.append(micPanel({
+      delay:t.snd?2200:600,
+      check:x=>{ const hw=words(x); if(hw.length<minW) return false; if(open||!kw.length) return true; return kw.some(k=>hasWord(hw,k)); },
+      failMsg: story?'Тағы бірнеше сөйлем қосып, қайтадан байқап көр 🙂':'Қайтадан байқап көр 🙂',
+      onPass:()=>done()}));
+  };
+  if(t.chest){
+    const chest=h('button',{class:'chest','aria-label':'Сандықты ашу'},'🧰');
+    root.append(chest,body);
+    body.append(h('p',{class:'tip'},'Сандықты басып аш.'));
+    chest.onclick=()=>{ chest.classList.add('open'); chest.replaceChildren(glyph(t.pic,110)); chest.disabled=true; body.replaceChildren(); play('yay'); show(); };
+  } else { root.append(body); show(); }
 };
 
 R.dialog=(t,root,done)=>{
@@ -1091,12 +1252,63 @@ R.dialog=(t,root,done)=>{
     if(i>=t.lines.length){ play('yay'); replies.append(h('div',{class:'msg good'},pick(PRAISE)+' Әдемі сөйлестің!')); done(); return; }
     const L=t.lines[i];
     if(L.me){
-      replies.append(h('div',{class:'tip'},'🗣️ Жауабыңды дауыстап айт, сосын бас:'));
-      L.me.forEach(r=>replies.append(h('button',{class:'reply',onclick:()=>{ add('me','🙂','Мен',r); play('tick'); i++; setTimeout(nextLine,400); }},r)));
-      replies.append(h('button',{class:'reply own',onclick:()=>{ add('me','🙂','Мен','(өз сөзіммен айттым)'); i++; setTimeout(nextLine,400); }},'✨ Өз сөзіммен айттым'));
-    } else { add('npc',L.w,L.n,L.s); speak(L.s); i++; setTimeout(nextLine,700); }
+      const advance=text=>{ add('me','🙂','Мен',text||'(айтты)'); i++; setTimeout(nextLine,700); };
+      const hb=h('div',{class:'help'},h('b',{},'Былай айтуға болады:'),h('ul',{},L.me.map(r=>h('li',{},r))));
+      const tapRow=h('div',{class:'replies',hidden:true},L.me.map(r=>h('button',{class:'reply',onclick:()=>advance(r)},r)));
+      replies.append(hb, micPanel({
+        delay:900,
+        check:x=>L.me.some(r=>phraseScore(x,r)>=.5),
+        onPass:text=>setTimeout(()=>advance(text),600),
+        onSkip:()=>{}, }), tapRow);
+    } else { add('npc',L.w,L.n,L.s); speak(L.s); i++; setTimeout(nextLine,900); }
   };
   root.append(chat,replies); nextLine();
+};
+
+R.build=(t,root,done)=>{
+  root.append(qline(t.q));
+  if(t.pic) root.append(h('div',{class:'bigpic',style:'font-size:80px'},glyph(t.pic,80)));
+  let k=0; const msg=h('div',{class:'msg kind'},'Бірінші сөзді бас.');
+  const slots=h('div',{class:'slots wslots'}); const ss=t.words.map((_,i)=>{ const s=h('div',{class:'slot'},h('span',{class:'ix'},i+1)); slots.append(s); return s; });
+  const pool=h('div',{class:'pool'});
+  shuffleNot(t.words.map((_,i)=>i)).forEach(i=>{ const c=h('button',{class:'chipitem',style:'font-size:20px;padding:12px 16px'},t.words[i]);
+    c.onclick=()=>{ if(i===k){ ss[k].classList.add('filled'); ss[k].append(t.words[i]); c.remove(); k++; play('tick');
+        if(k===t.words.length){ const sent=t.words.join(' ')+'.'; msg.className='msg good'; msg.textContent='Дұрыс құрадың! Енді дауыстап айт: «'+sent+'»'; play('yay');
+          root.append(micPanel({check:x=>phraseScore(x,sent)>=.6,onPass:()=>done()})); }
+        else { msg.className='msg good'; msg.textContent='Дұрыс! Келесі сөз?'; } }
+      else { wiggle(c); msg.className='msg kind'; msg.textContent='Сөйлемді айтып көр, қай сөз келеді? 🙂'; } };
+    pool.append(c); });
+  root.append(slots,pool,msg);
+};
+
+R.reveal=(t,root,done)=>{
+  root.append(qline(t.q.replace('Сосын басып, тексер.','Суретті бас та, атын айт.')));
+  let left=t.items.length; const msg=h('div',{class:'msg kind'},'Суретті бас, сосын оның атын дауыстап айт 🎤');
+  const grid=h('div',{class:'opts'}); const micBox=h('div');
+  let active=null;
+  t.items.forEach(it=>{ const lab=h('span',{style:'visibility:hidden'},it[1]); const b=h('button',{class:'opt'},glyph(it[0]),lab);
+    const reveal=()=>{ lab.style.visibility='visible'; b.classList.remove('sel'); b.classList.add('ok'); left--; micBox.replaceChildren(); active=null;
+      if(!left){ msg.className='msg good'; msg.textContent=pick(PRAISE)+' Бәрін атадың!'; play('yay'); done(); } else { msg.className='msg good'; msg.textContent='Дұрыс! Келесі суретті бас.'; } };
+    b.onclick=()=>{ if(b.classList.contains('ok')||active===b) return; grid.querySelectorAll('.sel').forEach(x=>x.classList.remove('sel')); active=b; b.classList.add('sel');
+      msg.className='msg kind'; msg.textContent='Бұл не? Атын айт 🙂';
+      micBox.replaceChildren(micPanel({delay:300,check:x=>phraseScore(x,it[1])>=.5,onPass:()=>reveal(),onSkip:()=>{}})); };
+    grid.append(b); });
+  root.append(grid,msg,micBox);
+};
+
+R.beat=(t,root,done)=>{
+  root.append(qline(t.q));
+  const parts=[]; t.text.split(' ').forEach((w,wi)=>{ if(wi) parts.push(null); w.split('-').forEach(s=>parts.push(s)); });
+  const line=h('div',{class:'sylls'}); const spans=[];
+  parts.forEach(p=>{ if(p===null||p==='—') line.append(h('span',{class:'sp'})); else { const s=h('span',{},p); spans.push(s); line.append(s); } });
+  const plain=t.text.replace(/-/g,'').replace(/—/g,' ');
+  const msg=h('div',{class:'msg kind'},'«Бастау» бас. Жарық жанған буынды бірге айт.');
+  const go=h('button',{class:'btn primary'},'▶ Бастау'); let running=false; const micBox=h('div');
+  go.onclick=()=>{ if(running) return; running=true; ac();
+    if(!micBox.firstChild) micBox.append(micPanel({delay:0,check:x=>phraseScore(x,plain)>=.5,onPass:()=>{ msg.className='msg good'; msg.textContent=pick(PRAISE)+' Бірқалыпты, әдемі айттың!'; done(); }}));
+    spans.forEach((s,i)=>setTimeout(()=>{ spans.forEach(x=>x.classList.remove('lit')); s.classList.add('lit'); play('tick'); },i*900));
+    setTimeout(()=>{ spans.forEach(x=>x.classList.remove('lit')); running=false; go.textContent='↻ Тағы бір рет'; },spans.length*900+300); };
+  root.append(line,h('div',{class:'btn-row',style:'justify-content:center'},go),micBox,msg,h('p',{class:'tip'},'🐢 Баяу, бірқалыпты. Жылдамдық маңызды емес.'));
 };
 
 /* =========================================================
@@ -1176,7 +1388,9 @@ function adults(){
         h('li',{},'Бала алдымен 5 дайындық кезеңінен өтеді, сосын 30 ойынды ретімен ойнайды.'),
         h('li',{},'Әр ойында 3 деңгей: 1 — жеңіл (тану, таңдау), 2 — орташа (түсіну, қолдану), 3 — күрделі (өздігінен сөйлеу, диалог).'),
         h('li',{},'Қате таңдауда қызыл белгі мен «қате» сөзі шықпайды: карта ақырын қозғалады да, «Тағы бір қарайықшы» деген жылы сөз шығады.'),
-        h('li',{},'Сөйлеу тапсырмаларын сайт бағаламайды. Бала айтқаннан кейін ересек адам «Айтып болдым» батырмасын басады. «Мысал» батырмасы — тек көмек.'),
+        h('li',{},'Сөйлеу тапсырмаларында (сұрақ-жауап, рөлдік ойын, әңгімелесу, атау) микрофон өзі қосылады: сайт баланың сөзін қазақ тілінде таниды да, «Дұрыс!» немесе «Қайтадан байқап көр» деп жазады. Дауысты тану Chrome браузерінде және интернет болғанда жұмыс істейді. Үш рет байқағаннан кейін «Ересек: келесіге өту» сілтемесі шығады — бала тұрып қалмауы үшін.'),
+        h('li',{},'Артикуляция жаттығуларында алдыңғы камера қосылады: сайт күлімдеуді, ерінді созуды, ауызды ашуды, эмоцияларды таниды. Тілдің ұшы жоғары-төмен қимылын камера көрмейді — оны ересек адам бақылап, батырманы басады.'),
+        h('li',{},'Тұтығатын балалардың сөзін автоматты тану кейде қателеседі. Сайт «қате» демейді, тек қайтадан байқауды ұсынады. Баланы мазасыздандырса, ересек адам келесіге өткізіп жібере алады.'),
         h('li',{},'Тыныс ойындарында батырманы басып тұрғанда ғана нысан қозғалады. 2 секундтан кейін «Демал» деп тоқтатады — ұзақ дем шығаруға итермелемейді. Микрофон міндетті емес.'),
         h('li',{},'Жұлдыздар осы құрылғыдағы браузерде сақталады.'))),
     h('section',{},h('h3',{},'Құрылымы'),
@@ -1252,6 +1466,7 @@ function board(kind,id,lv){
 function go(kind,id,lv){ const hsh=`#${kind}${id}${lv?'-l'+(lv+1):''}`; if(location.hash===hsh) route(); else location.hash=hsh; }
 
 function route(){
+  stopListening();
   document.querySelectorAll('.celebrate').forEach(x=>x.remove());
   const hs=location.hash.slice(1)||'home';
   let m;
