@@ -189,6 +189,7 @@
         if (e.error === 'not-allowed' || e.error === 'service-not-allowed') onInfo('Микрофонға рұқсат берілмеді. Дауыстап айт — логопед растайды.');
         else if (e.error === 'no-speech') { got = true; onResult(false, ''); }
         else if (e.error === 'network') onInfo('Дауысты тану қызметіне қосылу мүмкін болмады. Дауыстап айт — логопед растайды.');
+        else if (e.error === 'language-not-supported') onInfo('Бұл браузер қазақ тілін танымайды (Chrome-ды қолданыңыз). Дауыстап айт — логопед растайды.');
       };
       rec.onend = () => { reset(); if (!got) onResult(false, ''); };
       try { rec.start(); busy = true; btn.classList.add('on'); btn.textContent = '⏹ Тыңдап тұрмын…'; } catch (e) { reset(); }
@@ -356,12 +357,14 @@
         const nxt = lv.w.findIndex((_, k) => !passed.has(k));
         later(() => { select(nxt); speak(lv.w[nxt]); }, 1100);
       };
+      let fails = 0;
       const mic = speechCheck(() => lv.w[cur], (ok, heard) => {
         if (ok) return pass(cur, heard);
+        if (++fails >= 3) confirm.classList.remove('hidden');
         status.textContent = heard ? `Естілгені: «${heard}». Тағы бір рет анық айтып көр.` : 'Дыбыс естілмеді. Тағы бір рет айтып көр.';
         status.className = 'say-status bad'; sfx.bad();
-      }, (msg) => { status.textContent = msg; status.className = 'say-status'; });
-      const confirm = el('button.btn.line.sm', { type: 'button' }, 'Дұрыс айтылды ✓ (логопед)');
+      }, (msg) => { status.textContent = msg; status.className = 'say-status'; confirm.classList.remove('hidden'); });
+      const confirm = el('button.btn.line.sm' + (FAST ? '' : '.hidden'), { type: 'button' }, 'Дұрыс айтылды ✓ (логопед)');
       confirm._ok = true;
       confirm.addEventListener('click', () => pass(cur));
       tools.append(el('button.listen', { type: 'button', onclick: () => playNow(lv.w[cur]) }, '🔊 Тыңдау'), mic, confirm);
@@ -521,42 +524,108 @@
   }
 
   /* --- артикуляция --- */
+  /* --- камера: бет моделі (MediaPipe Face Landmarker, құрылғының өзінде) --- */
+  const Face = { lm: null, loading: null };
+  function loadFace() {
+    if (Face.lm) return Promise.resolve(Face.lm);
+    if (!Face.loading) Face.loading = (async () => {
+      const base = new URL('vendor/mediapipe/', document.baseURI).href;
+      const v = await import(base + 'vision_bundle.mjs');
+      const files = await v.FilesetResolver.forVisionTasks(base + 'wasm');
+      const opts = (delegate) => ({ baseOptions: { modelAssetPath: base + 'face_landmarker.task', delegate },
+        outputFaceBlendshapes: true, runningMode: 'VIDEO', numFaces: 1 });
+      try { Face.lm = await v.FaceLandmarker.createFromOptions(files, opts('GPU')); }
+      catch (e) { Face.lm = await v.FaceLandmarker.createFromOptions(files, opts('CPU')); }
+      return Face.lm;
+    })().catch((e) => { Face.loading = null; throw e; });
+    return Face.loading;
+  }
+  // Әр жаттығуға камера көре алатын белгі: ауыз ашылуы, ерін созылуы (тұмсық) немесе жымию.
+  // Тілдің қимылын модель көрмейді — тіл жаттығуларында ауыздың ашық тұруы тексеріледі.
+  const POSES = {
+    open: { label: 'Аузыңды аш', get: (b) => b.jawOpen },
+    wide: { label: 'Аузыңды кең аш', get: (b) => b.jawOpen },
+    pucker: { label: 'Еріндеріңді алға соз', get: (b) => Math.max(b.mouthPucker, b.mouthFunnel * 1.1) },
+    smile: { label: 'Жымиып, тістеріңді көрсет', get: (b) => (b.mouthSmileLeft + b.mouthSmileRight) / 2 },
+  };
+  const POSE_OF = {
+    'Терезе': ['wide', 0.4], 'Саңырауқұлақ': ['wide', 0.35], 'Күрекше': ['open', 0.22], 'Ат шауып келеді': ['open', 0.2],
+    'Тәтті тосап': ['open', 0.18], 'Кесе': ['open', 0.2], 'Сылақшы': ['open', 0.22], 'Барабан': ['open', 0.18],
+    'Бақа': ['smile', 0.4], 'Күлімсіреу': ['smile', 0.4], 'Пілдің тұмсығы': ['pucker', 0.4],
+  };
+  let camWanted = false;
+  function camPanel(ex, onPass) {
+    const [poseId, thr] = POSE_OF[ex.t] || ['open', 0.2];
+    const pose = POSES[poseId];
+    const need = Math.max(3, ex.hold || ex.reps || 5); // секунд
+    const video = el('video', { playsinline: true, muted: true, autoplay: true });
+    const frame = el('div.cam-frame', {}, video, el('div.cam-off', {}, el('span', {}, '📷'), el('span', {}, 'Камера өшірулі')));
+    const meter = el('div.cam-meter', { style: `--t:${thr}` }, el('b'), el('i'));
+    const ring = el('div.ring', { style: '--p:0' }, el('span', {}, `${need}`));
+    const status = el('p.cam-status', {}, `Камераны қос та, айнаға қарағандай орында: ${pose.label.toLowerCase()}.`);
+    const start = el('button.btn.gold', { type: 'button' }, '📷 Камераны қосу');
+    const confirm = el('button.btn.line.sm' + (FAST ? '' : '.hidden'), { type: 'button' }, 'Дұрыс орындады ✓ (логопед)');
+    confirm._ok = true;
+    let stream = null, raf = 0, last = -1, held = 0, prev = 0, passed = false, helpTimer = 0, missing = 0;
+    const showHelp = () => confirm.classList.remove('hidden');
+    const stop = () => { cancelAnimationFrame(raf); clearTimeout(helpTimer); if (stream) stream.getTracks().forEach((t) => t.stop()); stream = null; frame.classList.remove('on'); };
+    const pass = () => { if (passed) return; passed = true; ring.classList.add('ok'); ring.firstChild.textContent = '✓'; status.textContent = 'Жарайсың! Жаттығу дұрыс орындалды.'; status.className = 'cam-status good'; sfx.ok(); stop(); onPass(); };
+    confirm.addEventListener('click', pass);
+    const loop = (now) => {
+      raf = requestAnimationFrame(loop);
+      if (!Face.lm || video.readyState < 2 || video.currentTime === last) return;
+      last = video.currentTime;
+      const dt = prev ? Math.min(0.2, (now - prev) / 1000) * (FAST ? 10 : 1) : 0; prev = now;
+      let res; try { res = Face.lm.detectForVideo(video, now); } catch (e) { return; }
+      const cats = res.faceBlendshapes && res.faceBlendshapes[0] && res.faceBlendshapes[0].categories;
+      if (!cats) {
+        meter.firstChild.style.width = '0%';
+        if (++missing > 8) { status.textContent = 'Бетің көрінбей тұр. Камераға тура қара.'; status.className = 'cam-status bad'; }
+        return;
+      }
+      missing = 0;
+      const b = {}; cats.forEach((c) => { b[c.categoryName] = c.score; });
+      window.__pcFace = b; // тексеру үшін соңғы көрсеткіштер
+      const v = pose.get(b) || 0;
+      meter.firstChild.style.width = Math.min(100, v * 100) + '%';
+      const ok = v >= thr;
+      if (ok) held += dt;
+      meter.classList.toggle('ok', ok);
+      ring.style.setProperty('--p', Math.min(1, held / need));
+      ring.firstChild.textContent = String(Math.max(0, Math.ceil(need - held)));
+      status.textContent = ok ? 'Дұрыс! Осы қалыпты ұстап тұр…' : `${pose.label}.`;
+      status.className = 'cam-status' + (ok ? ' good' : '');
+      if (held >= need) pass();
+    };
+    const go = async () => {
+      if (stream || passed) return;
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { status.textContent = 'Бұл құрылғыда камера қолжетімсіз. Логопед бақылап, растайды.'; return showHelp(); }
+      start.disabled = true; start.textContent = 'Камера қосылуда…';
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false });
+      } catch (e) {
+        start.disabled = false; start.textContent = '📷 Камераны қосу';
+        status.textContent = 'Камераға рұқсат берілмеді. Браузерде камераға рұқсат беріп, қайта бас.'; status.className = 'cam-status bad';
+        return showHelp();
+      }
+      camWanted = true;
+      video.srcObject = stream; frame.classList.add('on'); start.classList.add('hidden');
+      status.textContent = 'Бет моделі жүктелуде…';
+      helpTimer = setTimeout(showHelp, 45000); // ұзақ шықпаса — логопедке растау батырмасы
+      try { await loadFace(); } catch (e) { status.textContent = 'Бет моделі жүктелмеді. Логопед бақылап, растайды.'; status.className = 'cam-status bad'; return showHelp(); }
+      status.textContent = `${pose.label}.`;
+      raf = requestAnimationFrame(loop);
+    };
+    start.addEventListener('click', go);
+    onCleanup(stop);
+    if (camWanted) setTimeout(go, 50);
+    loadFace().catch(() => {}); // модельді алдын ала жүктей береміз
+    return el('div.cam', {}, frame, el('div.cam-side', {}, el('div.cam-row', {}, ring, el('div.cam-meter-wrap', {}, el('span.cam-label', {}, pose.label), meter)), status, start, confirm));
+  }
+
   function gameArtic(host, ex, done, videos) {
     const steps = el('ol.steps', {}, ex.s.map((t) => el('li', {}, t)));
-    const ctrl = el('div.artic-ctrl');
-    if (ex.hold) {
-      const ring = el('div.ring', { style: '--p:0' }, el('span', {}, String(ex.hold)));
-      const btn = el('button.btn.gold', { type: 'button' }, 'Бастау');
-      btn._ok = true;
-      btn.addEventListener('click', () => {
-        btn.disabled = true; btn.textContent = 'Ұстап тұр…';
-        const total = T(ex.hold * 1000), t0 = performance.now();
-        let raf;
-        const tick = (now) => {
-          const p = Math.min(1, (now - t0) / total);
-          ring.style.setProperty('--p', p);
-          ring.firstChild.textContent = p >= 1 ? '✓' : String(Math.ceil(ex.hold * (1 - p)));
-          if (p < 1) raf = requestAnimationFrame(tick); else { ring.classList.add('ok'); sfx.ok(); btn.textContent = 'Жарайсың!'; done(); }
-        };
-        raf = requestAnimationFrame(tick);
-        onCleanup(() => cancelAnimationFrame(raf));
-      });
-      ctrl.append(ring, btn);
-    } else {
-      let n = 0;
-      const ring = el('div.ring', { style: '--p:0' }, el('span', {}, `0/${ex.reps}`));
-      const btn = el('button.btn.gold', { type: 'button' }, 'Орындадым +1');
-      btn._ok = true;
-      btn.addEventListener('click', () => {
-        if (n >= ex.reps) return;
-        n++; sfx.ok();
-        ring.style.setProperty('--p', n / ex.reps);
-        ring.firstChild.textContent = n >= ex.reps ? '✓' : `${n}/${ex.reps}`;
-        if (n >= ex.reps) { ring.classList.add('ok'); btn.disabled = true; btn.textContent = 'Жарайсың!'; done(); }
-      });
-      ctrl.append(ring, btn);
-    }
-    host.append(el('div.artic', {}, el('div.artic-face', {}, el('div.mouth' + (ex.hold ? '.hold' : '.reps'))), el('div', {}, steps), ctrl));
+    host.append(el('div.artic', {}, el('div.artic-steps', {}, steps), camPanel(ex, done)));
     if (videos && videos.length) host.append(el('div.videos', {}, videos.map(videoCard)));
   }
 
@@ -843,6 +912,7 @@
     const idx = SECTIONS.indexOf(sec), tabs = tabsFor(s, sec.id), st = STAGES[sec.stage - 1];
     const nextSec = SECTIONS[idx + 1];
     let cur = Math.max(0, tabs.findIndex((_, i) => !tabDone(s, sec.id, i)));
+    if (sec.id !== '1.2') camWanted = false;
     const tabbar = el('div.tabs', { role: 'tablist' }), desc = el('p.game-desc'), stage = el('div.game-stage');
     const board = el('div.board', {}, tabbar, desc, stage);
 
@@ -858,8 +928,10 @@
     const show = (i) => {
       cleanup(); cur = i;
       tabbar.innerHTML = '';
+      const strict = sec.id === '1.2' || sec.id === '2.3';
+      const firstOpen = tabs.findIndex((_, k) => !tabDone(s, sec.id, k));
       if (tabs.length > 1) tabs.forEach((t, k) => tabbar.append(el('button.tab' + (k === i ? '.on' : '') + (tabDone(s, sec.id, k) ? '.done' : ''),
-        { type: 'button', role: 'tab', onclick: () => show(k) }, el('i', {}, tabDone(s, sec.id, k) ? '✓' : String(k + 1)), t.label)));
+        { type: 'button', role: 'tab', disabled: strict && !unlockAll && firstOpen >= 0 && k > firstOpen && !tabDone(s, sec.id, k), onclick: () => show(k) }, el('i', {}, tabDone(s, sec.id, k) ? '✓' : String(k + 1)), t.label)));
       const say = tabs[i].narr || tabs[i].desc;
       desc.innerHTML = '';
       desc.append(...[el('span', {}, tabs[i].desc), listenBtn(say, 'Түсіндірмені тыңдау')].filter(Boolean));
