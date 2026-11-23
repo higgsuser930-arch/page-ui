@@ -1,0 +1,33 @@
+{
+  "name": "birge",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "emulators": "firebase emulators:start --only auth,firestore,hosting --project demo-birge",
+    "deploy": "npm run build && firebase deploy --only hosting,firestore",
+    "test:rules": "node tests/rules.test.mjs",
+    "test:e2e": "node tests/e2e-sync.cjs && node tests/e2e-late-join.cjs",
+    "dev:emulators": "VITE_USE_EMULATORS=true vite --host 127.0.0.1"
+  },
+  "dependencies": {
+    "@vimeo/player": "^2.30.4",
+    "firebase": "^11.10.0",
+    "hls.js": "^1.7.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.30.6"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "@types/vimeo__player": "^2.18.3",
+    "@vitejs/plugin-react": "^4.7.0",
+    "firebase-tools": "^14.27.0",
+    "typescript": "^5.9.3",
+    "vite": "^5.4.21"
+  }
+}

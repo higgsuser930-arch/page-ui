@@ -1,0 +1,129 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function me() { return request.auth.uid; }
+    function doc(path) { return get(/databases/$(database)/documents/$(path)); }
+    function validName(n) { return n is string && n.matches('^[a-z0-9_]{3,20}$'); }
+    function pairMembers(pairId) { return pairId.split('_'); }
+    function isPairMember(pairId) { return signedIn() && me() in pairMembers(pairId); }
+    function areFriends(pairId) {
+      return exists(/databases/$(database)/documents/friendships/$(pairId))
+        && doc(/friendships/$(pairId)).data.status == 'accepted';
+    }
+
+    // ---------- Public profiles ----------
+    match /users/{uid} {
+      allow read: if signedIn();
+      allow create, update: if signedIn() && me() == uid
+        && validName(request.resource.data.username)
+        && getAfter(/databases/$(database)/documents/usernames/$(request.resource.data.username)).data.uid == uid
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() <= 40
+        && (!('bio' in request.resource.data) || request.resource.data.bio.size() <= 160);
+      allow delete: if false;
+    }
+
+    // ---------- Clock probe (server time offset for playback sync) ----------
+    match /clock/{uid} {
+      allow read, write: if signedIn() && me() == uid;
+    }
+
+    // ---------- Username reservations (uniqueness) ----------
+    match /usernames/{name} {
+      allow read: if signedIn();
+      allow create: if signedIn() && validName(name) && request.resource.data.uid == me();
+      allow delete: if signedIn() && resource.data.uid == me();
+      allow update: if false;
+    }
+
+    // ---------- Friendships: id = sortedUidA_sortedUidB ----------
+    match /friendships/{pairId} {
+      // written against resource.data so `where('members', 'array-contains', uid)` queries are provably allowed
+      allow read: if signedIn() && me() in resource.data.members;
+      allow create: if isPairMember(pairId)
+        && request.resource.data.requestedBy == me()
+        && request.resource.data.status == 'pending'
+        && request.resource.data.members.toSet() == pairMembers(pairId).toSet()
+        && pairMembers(pairId)[0] < pairMembers(pairId)[1];
+      // only the receiver may accept
+      allow update: if isPairMember(pairId)
+        && resource.data.status == 'pending'
+        && resource.data.requestedBy != me()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'acceptedAt'])
+        && request.resource.data.status == 'accepted';
+      allow delete: if isPairMember(pairId);
+    }
+
+    // ---------- Private chats between friends ----------
+    match /dms/{pairId} {
+      allow read: if signedIn() && me() in resource.data.members;
+      allow create, update: if isPairMember(pairId) && areFriends(pairId)
+        && request.resource.data.members.toSet() == pairMembers(pairId).toSet();
+
+      match /messages/{msgId} {
+        allow read: if isPairMember(pairId);
+        allow create: if isPairMember(pairId) && areFriends(pairId)
+          && request.resource.data.from == me()
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 2000;
+      }
+    }
+
+    // ---------- Watch rooms ----------
+    match /rooms/{roomId} {
+      function room() { return doc(/rooms/$(roomId)).data; }
+      function isMember() { return signedIn() && me() in room().members; }
+      function isAdmin() { return signedIn() && me() in room().admins; }
+
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.ownerId == me()
+        && request.resource.data.admins == [me()]
+        && request.resource.data.members == [me()]
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 60
+        && request.resource.data.maxMembers is int
+        && request.resource.data.maxMembers >= 2
+        && request.resource.data.maxMembers <= 28;
+
+      allow update: if signedIn() && (
+        // Admins: video, playback, settings, kicking members, adding admins (owner only for admins)
+        (me() in resource.data.admins
+          && request.resource.data.ownerId == resource.data.ownerId
+          && request.resource.data.members.size() <= resource.data.maxMembers
+          && request.resource.data.maxMembers >= 2
+          && request.resource.data.maxMembers <= 28
+          && request.resource.data.name.size() <= 60
+          && (request.resource.data.admins == resource.data.admins || resource.data.ownerId == me())
+          && resource.data.ownerId in request.resource.data.admins)
+        ||
+        // Everyone else: may only add or remove themselves
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members'])
+          && request.resource.data.members.size() <= resource.data.maxMembers
+          && request.resource.data.members.toSet().difference(resource.data.members.toSet()).hasOnly([me()])
+          && resource.data.members.toSet().difference(request.resource.data.members.toSet()).hasOnly([me()]))
+      );
+      allow delete: if signedIn() && resource.data.ownerId == me();
+
+      match /messages/{msgId} {
+        allow read: if isMember();
+        allow create: if isMember()
+          && request.resource.data.uid == me()
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 1000;
+        allow delete: if isAdmin() || (signedIn() && resource.data.uid == me());
+      }
+
+      match /presence/{uid} {
+        allow read: if isMember();
+        allow write: if isMember() && uid == me();
+      }
+    }
+  }
+}
