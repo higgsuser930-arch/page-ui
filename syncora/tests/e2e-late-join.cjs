@@ -1,9 +1,11 @@
 // End-to-end: late joiner, autoplay block, admin reload. Needs: emulators + dev:emulators + public/test.webm (see README).
 const { chromium } = require('playwright');
+const { setConfig } = require('./helpers.cjs');
 const BASE = 'http://127.0.0.1:5173';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 function ok(c, m) { if (!c) throw new Error('FAIL: ' + m); console.log('  ✓ ' + m); }
 (async () => {
+  await setConfig({ subscriptionRequired: false }); // paywall is covered by e2e-subscription.cjs
   const free = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] });
   const strict = await chromium.launch({ args: ['--autoplay-policy=user-gesture-required'] });
   const mk = async (br, sub) => {

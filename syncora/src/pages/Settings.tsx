@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Avatar } from '../components/Avatar';
 import { useI18n } from '../i18n';
 import { useMe } from '../lib/auth';
+import { cancelSubscription, isActive, useAppConfig, useSubscription } from '../lib/subscription';
 import { updateProfile } from '../lib/data';
 import { changeUsername, isUsernameFree, normalizeUsername, randomUsername, USERNAME_RE } from '../lib/usernames';
 
@@ -94,6 +96,60 @@ export function Settings() {
           {msg && <span className="small">{msg}</span>}
         </div>
       </form>
+      <SubscriptionCard uid={me.uid} />
+    </div>
+  );
+}
+
+function SubscriptionCard({ uid }: { uid: string }) {
+  const { t, lang } = useI18n();
+  const sub = useSubscription(uid);
+  const cfg = useAppConfig();
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState('');
+  if (!cfg?.subscriptionRequired && !sub) return null;
+  const active = isActive(sub);
+  const cancelled = sub?.status === 'cancelled' || sub?.status === 'expired' || sub?.status === 'rejected';
+  const date = sub?.paidUntil?.toDate().toLocaleDateString(lang === 'en' ? 'en-GB' : 'kk-KZ', { day: 'numeric', month: 'long', year: 'numeric' });
+  return (
+    <div className="card form sub-card">
+      <h2>{t('sub.section')}</h2>
+      <div className="row between wrap gap">
+        <div>
+          <span className={`tag big ${active && !cancelled ? '' : 'off'}`}>
+            {!active ? t('sub.status.none') : cancelled ? t('sub.status.cancelled') : t('sub.status.active')}
+          </span>
+          {date && <p className="small" style={{ marginTop: 8 }}>{t('sub.until', { date })}</p>}
+          {active && !cancelled && cfg && <p className="muted small">{t('sub.next', { price: cfg.priceKzt })}</p>}
+        </div>
+        {active && !cancelled && sub?.cpSubscriptionId && (
+          <button
+            className="btn danger sm"
+            disabled={busy}
+            onClick={async () => {
+              if (!confirm(t('sub.cancel.confirm'))) return;
+              setBusy(true);
+              setMsg('');
+              try {
+                await cancelSubscription();
+                setMsg(t('sub.cancelled'));
+              } catch {
+                setMsg(t('common.error'));
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            {t('sub.cancel')}
+          </button>
+        )}
+      </div>
+      {msg && <p className="small">{msg}</p>}
+      <div className="legal-links small">
+        <Link to="/legal/offer">{t('legal.offer')}</Link>
+        <Link to="/legal/privacy">{t('legal.privacy')}</Link>
+        <Link to="/legal/refund">{t('legal.refund')}</Link>
+      </div>
     </div>
   );
 }

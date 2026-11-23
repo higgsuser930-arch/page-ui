@@ -4,10 +4,13 @@ import { useAuth } from '../lib/auth';
 import { Icon } from '../components/Icon';
 import { LangSwitch } from '../components/LangSwitch';
 import { Logo } from '../components/Logo';
+import { useAppConfig } from '../lib/subscription';
+import { LegalFooter } from './Paywall';
 
 export function Landing() {
   const { t } = useI18n();
   const { signIn } = useAuth();
+  const cfg = useAppConfig();
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
   const go = async () => {
@@ -42,6 +45,12 @@ export function Landing() {
           </svg>
           {t('auth.google')}
         </button>
+        {cfg?.subscriptionRequired && (
+          <p className="price-hint">
+            <span className="tag big">{t('sub.intro.badge')}</span> {t('sub.intro.price', { intro: cfg.introPriceKzt })},{' '}
+            <span className="muted">{t('sub.intro.then', { price: cfg.priceKzt })}</span>
+          </p>
+        )}
         <p className="muted small">{t('auth.only_google')}</p>
         {err && <p className="error">{err}</p>}
       </section>
@@ -62,7 +71,7 @@ export function Landing() {
           </div>
         ))}
       </section>
-      <footer className="landing-foot muted small">© {new Date().getFullYear()} SYNCORA</footer>
+      <LegalFooter />
     </div>
   );
 }

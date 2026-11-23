@@ -1,11 +1,13 @@
 // End-to-end: two users, sync of play/seek/pause, room chat, friends, DMs. Needs: emulators + dev:emulators + public/test.webm (see README).
 const { chromium } = require('playwright');
+const { setConfig } = require('./helpers.cjs');
 const BASE = 'http://127.0.0.1:5173';
 const SHOTS = process.argv[2] || require('os').tmpdir();
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 function ok(cond, msg) { if (!cond) { throw new Error('FAIL: ' + msg); } console.log('  ✓ ' + msg); }
 
 (async () => {
+  await setConfig({ subscriptionRequired: false }); // paywall is covered by e2e-subscription.cjs
   const browser = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] });
   const mk = async (sub, name) => {
     const ctx = await browser.newContext({ viewport: { width: 1400, height: 860 }, locale: 'kk-KZ' });

@@ -11,7 +11,15 @@ const fail = (m) => { failed++; console.log('  ✗ ' + m); };
 async function allowed(label, fn) { try { await fn(); pass(label); } catch (e) { fail(`${label} — ${e.code || e.message}`); } }
 async function denied(label, fn) { try { await fn(); fail(`${label} — was allowed!`); } catch (e) { e.code === 'permission-denied' ? pass(label) : fail(`${label} — ${e.code || e.message}`); } }
 
-async function user(name) {
+const FS = 'http://127.0.0.1:8080/v1/projects/demo-syncora/databases/(default)/documents';
+async function adminPatch(path, fields) {
+  const r = await fetch(`${FS}/${path}`, { method: 'PATCH', headers: { Authorization: 'Bearer owner', 'Content-Type': 'application/json' }, body: JSON.stringify({ fields }) });
+  if (!r.ok) throw new Error(`admin write ${path}: ${r.status}`);
+}
+const monthAhead = () => ({ timestampValue: new Date(Date.now() + 30 * 864e5).toISOString() });
+await adminPatch('config/app', { subscriptionRequired: { booleanValue: true }, priceKzt: { integerValue: '999' }, introPriceKzt: { integerValue: '499' } });
+
+async function user(name, paid = true) {
   const app = initializeApp({ apiKey: 'demo', projectId: 'demo-syncora', appId: name }, name);
   const auth = getAuth(app);
   connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
@@ -24,10 +32,19 @@ async function user(name) {
   b.set(doc(db, 'usernames', username), { uid: user.uid });
   b.set(doc(db, 'users', user.uid), { uid: user.uid, username, displayName: name, photoURL: null, bio: '' });
   await b.commit();
+  if (paid) await adminPatch(`subscriptions/${user.uid}`, { activeUntil: monthAhead(), status: { stringValue: 'active' } });
   return { uid: user.uid, db, username };
 }
 
-const [owner, member, stranger] = await Promise.all([user('owner'), user('member'), user('stranger')]);
+const [owner, member, stranger, unpaid] = await Promise.all([user('owner'), user('member'), user('stranger'), user('unpaid', false)]);
+console.log('Subscription');
+await denied('cannot give yourself a subscription', () => setDoc(doc(unpaid.db, 'subscriptions', unpaid.uid), { activeUntil: new Date(Date.now() + 1e10), status: 'active' }));
+await denied('cannot change prices', () => setDoc(doc(unpaid.db, 'config', 'app'), { priceKzt: 1 }));
+await denied('unpaid user cannot create a room', () => addDoc(collection(unpaid.db, 'rooms'), { name: 'x', ownerId: unpaid.uid, admins: [unpaid.uid], members: [unpaid.uid], maxMembers: 5, isPublic: false }));
+await denied('unpaid user cannot send friend requests', () => {
+  const [x, y] = [unpaid.uid, owner.uid].sort();
+  return setDoc(doc(unpaid.db, 'friendships', `${x}_${y}`), { members: [x, y], requestedBy: unpaid.uid, status: 'pending' });
+});
 console.log('Profiles & usernames');
 await denied('cannot take a username someone already holds', () => setDoc(doc(stranger.db, 'usernames', owner.username), { uid: stranger.uid }));
 await denied('cannot point own profile at a username you do not hold', () => updateDoc(doc(stranger.db, 'users', stranger.uid), { username: owner.username }));
@@ -40,6 +57,7 @@ const roomRef = await addDoc(collection(owner.db, 'rooms'), {
 });
 const id = roomRef.id;
 await denied('cannot create a room with more than 28 seats', () => addDoc(collection(owner.db, 'rooms'), { name: 'x', ownerId: owner.uid, admins: [owner.uid], members: [owner.uid], maxMembers: 50, isPublic: false }));
+await denied('unpaid user cannot join a room', () => updateDoc(doc(unpaid.db, 'rooms', id), { members: arrayUnion(unpaid.uid) }));
 await allowed('member can join', () => updateDoc(doc(member.db, 'rooms', id), { members: arrayUnion(member.uid) }));
 await denied('room is full (2/2): stranger cannot join', () => updateDoc(doc(stranger.db, 'rooms', id), { members: arrayUnion(stranger.uid) }));
 await denied('stranger cannot read room chat', () => getDocs(collection(stranger.db, 'rooms', id, 'messages')));

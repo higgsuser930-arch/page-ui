@@ -9,6 +9,16 @@ service cloud.firestore {
     function validName(n) { return n is string && n.matches('^[a-z0-9_]{3,20}$'); }
     function pairMembers(pairId) { return pairId.split('_'); }
     function isPairMember(pairId) { return signedIn() && me() in pairMembers(pairId); }
+    // Paid access. `config/app.subscriptionRequired == false` switches the paywall off (e.g. before payments are approved).
+    function paywallOff() {
+      return exists(/databases/$(database)/documents/config/app)
+        && doc(/config/app).data.get('subscriptionRequired', true) == false;
+    }
+    function subscribed() {
+      return paywallOff() || (
+        exists(/databases/$(database)/documents/subscriptions/$(me()))
+        && doc(/subscriptions/$(me())).data.activeUntil > request.time);
+    }
     function areFriends(pairId) {
       return exists(/databases/$(database)/documents/friendships/$(pairId))
         && doc(/friendships/$(pairId)).data.status == 'accepted';
@@ -24,6 +34,21 @@ service cloud.firestore {
         && request.resource.data.displayName.size() <= 40
         && (!('bio' in request.resource.data) || request.resource.data.bio.size() <= 160);
       allow delete: if false;
+    }
+
+    // ---------- App config (prices, paywall switch) — edited in the Firebase console only ----------
+    match /config/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // ---------- Subscriptions & payments — written only by Cloud Functions ----------
+    match /subscriptions/{uid} {
+      allow read: if signedIn() && me() == uid;
+      allow write: if false;
+    }
+    match /payments/{id} {
+      allow read, write: if false;
     }
 
     // ---------- Clock probe (server time offset for playback sync) ----------
@@ -43,7 +68,7 @@ service cloud.firestore {
     match /friendships/{pairId} {
       // written against resource.data so `where('members', 'array-contains', uid)` queries are provably allowed
       allow read: if signedIn() && me() in resource.data.members;
-      allow create: if isPairMember(pairId)
+      allow create: if isPairMember(pairId) && subscribed()
         && request.resource.data.requestedBy == me()
         && request.resource.data.status == 'pending'
         && request.resource.data.members.toSet() == pairMembers(pairId).toSet()
@@ -60,12 +85,12 @@ service cloud.firestore {
     // ---------- Private chats between friends ----------
     match /dms/{pairId} {
       allow read: if signedIn() && me() in resource.data.members;
-      allow create, update: if isPairMember(pairId) && areFriends(pairId)
+      allow create, update: if isPairMember(pairId) && areFriends(pairId) && subscribed()
         && request.resource.data.members.toSet() == pairMembers(pairId).toSet();
 
       match /messages/{msgId} {
         allow read: if isPairMember(pairId);
-        allow create: if isPairMember(pairId) && areFriends(pairId)
+        allow create: if isPairMember(pairId) && areFriends(pairId) && subscribed()
           && request.resource.data.from == me()
           && request.resource.data.text is string
           && request.resource.data.text.size() > 0
@@ -80,7 +105,7 @@ service cloud.firestore {
       function isAdmin() { return signedIn() && me() in room().admins; }
 
       allow read: if signedIn();
-      allow create: if signedIn()
+      allow create: if signedIn() && subscribed()
         && request.resource.data.ownerId == me()
         && request.resource.data.admins == [me()]
         && request.resource.data.members == [me()]
@@ -93,7 +118,7 @@ service cloud.firestore {
 
       allow update: if signedIn() && (
         // Admins: video, playback, settings, kicking members, adding admins (owner only for admins)
-        (me() in resource.data.admins
+        (me() in resource.data.admins && subscribed()
           && request.resource.data.ownerId == resource.data.ownerId
           && request.resource.data.members.size() <= resource.data.maxMembers
           && request.resource.data.maxMembers >= 2
@@ -104,6 +129,7 @@ service cloud.firestore {
         ||
         // Everyone else: may only add or remove themselves
         (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members'])
+          && (request.resource.data.members.size() < resource.data.members.size() || subscribed()) // leaving is always free
           && request.resource.data.members.size() <= resource.data.maxMembers
           && request.resource.data.members.toSet().difference(resource.data.members.toSet()).hasOnly([me()])
           && resource.data.members.toSet().difference(request.resource.data.members.toSet()).hasOnly([me()]))
@@ -112,7 +138,7 @@ service cloud.firestore {
 
       match /messages/{msgId} {
         allow read: if isMember();
-        allow create: if isMember()
+        allow create: if isMember() && subscribed()
           && request.resource.data.uid == me()
           && request.resource.data.text is string
           && request.resource.data.text.size() > 0

@@ -274,3 +274,22 @@ input[type='range'] { width: 100%; }
   .back-btn { display: inline-flex; }
   .volume { width: 70px !important; }
 }
+
+/* ---------- subscription & legal ---------- */
+.tag.big { font-size: 0.8rem; padding: 4px 12px; }
+.tag.off { background: rgba(255, 255, 255, 0.06); color: var(--muted); }
+.btn.big { height: 54px; font-size: 1.05rem; width: 100%; }
+.paywall .plan { width: min(480px, 100%); margin: 30px auto 0; padding: 32px; display: flex; flex-direction: column; gap: 12px; text-align: center; align-items: center; box-shadow: 0 20px 80px rgba(124, 58, 237, 0.25); border-color: var(--line-2); }
+.paywall .plan h1 { margin: 0; }
+.price { font-size: 1.2rem; }
+.price b { font-size: 3rem; font-weight: 800; letter-spacing: -0.03em; background: linear-gradient(180deg, #fff, var(--violet-3)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.price s { font-size: 1.3rem; }
+.plan-features { list-style: none; padding: 0; margin: 6px 0 10px; display: flex; flex-direction: column; gap: 10px; text-align: left; align-self: stretch; }
+.plan-features li { display: flex; gap: 10px; align-items: center; color: var(--text-2); }
+.plan-features svg { color: var(--violet-3); flex: none; }
+.price-hint { margin: 4px 0 0; }
+.legal-links { display: flex; flex-wrap: wrap; gap: 8px 18px; justify-content: center; }
+.sub-card { margin-top: 20px; }
+.sub-card .legal-links { justify-content: flex-start; }
+.legal { max-width: 820px; width: 100%; margin: 10px auto 0; padding: 32px; line-height: 1.65; }
+.legal p { color: var(--text-2); }

@@ -7,11 +7,11 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "emulators": "firebase emulators:start --only auth,firestore,hosting --project demo-syncora",
-    "deploy": "npm run build && firebase deploy --only hosting,firestore",
+    "emulators": "firebase emulators:start --only auth,firestore,functions --project demo-syncora",
+    "deploy": "npm run build && firebase deploy --only hosting,firestore,functions",
     "test:rules": "node tests/rules.test.mjs",
-    "test:e2e": "node tests/e2e-sync.cjs && node tests/e2e-late-join.cjs",
-    "dev:emulators": "VITE_USE_EMULATORS=true vite --host 127.0.0.1"
+    "test:e2e": "node tests/e2e-sync.cjs && node tests/e2e-late-join.cjs && node tests/e2e-subscription.cjs",
+    "dev:emulators": "VITE_USE_EMULATORS=true VITE_CP_PUBLIC_ID=test_pk vite --host 127.0.0.1"
   },
   "dependencies": {
     "@vimeo/player": "^2.30.4",
