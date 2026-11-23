@@ -25,11 +25,12 @@ export function Landing() {
   return (
     <div className="landing">
       <header className="landing-top">
-        <Logo size={32} />
+        <Logo size={26} variant="icon" />
         <LangSwitch />
       </header>
       <section className="hero">
         <div className="hero-glow" />
+        <Logo variant="full" />
         <h1>{t('app.tagline')}</h1>
         <p className="lead">{t('app.subtitle')}</p>
         <button className="btn google" onClick={go} disabled={busy}>
@@ -61,7 +62,7 @@ export function Landing() {
           </div>
         ))}
       </section>
-      <footer className="landing-foot muted small">© {new Date().getFullYear()} Birge</footer>
+      <footer className="landing-foot muted small">© {new Date().getFullYear()} SYNCORA</footer>
     </div>
   );
 }

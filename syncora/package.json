@@ -1,5 +1,5 @@
 {
-  "name": "birge",
+  "name": "syncora",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "emulators": "firebase emulators:start --only auth,firestore,hosting --project demo-birge",
+    "emulators": "firebase emulators:start --only auth,firestore,hosting --project demo-syncora",
     "deploy": "npm run build && firebase deploy --only hosting,firestore",
     "test:rules": "node tests/rules.test.mjs",
     "test:e2e": "node tests/e2e-sync.cjs && node tests/e2e-late-join.cjs",

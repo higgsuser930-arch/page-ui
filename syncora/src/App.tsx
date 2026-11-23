@@ -18,7 +18,7 @@ function Gate() {
   if (!isConfigured)
     return (
       <div className="page center">
-        <Logo size={40} />
+        <Logo size={40} variant="icon" />
         <h1>{t('setup.title')}</h1>
         <p className="muted">{t('setup.text')}</p>
       </div>
@@ -26,7 +26,7 @@ function Gate() {
   if (loading || (user && !profile))
     return (
       <div className="splash">
-        <Logo size={44} />
+        <Logo size={48} variant="icon" />
       </div>
     );
   if (!user) return <Landing />;

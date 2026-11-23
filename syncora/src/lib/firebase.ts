@@ -6,7 +6,7 @@ const env = import.meta.env;
 export const useEmulators = env.VITE_USE_EMULATORS === 'true';
 
 const config = useEmulators
-  ? { apiKey: 'demo-key', authDomain: 'localhost', projectId: 'demo-birge', appId: 'demo-app' }
+  ? { apiKey: 'demo-key', authDomain: 'localhost', projectId: 'demo-syncora', appId: 'demo-app' }
   : {
       apiKey: env.VITE_FIREBASE_API_KEY,
       authDomain: env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -35,7 +35,7 @@ if (useEmulators) {
 
 // Test hook for local end-to-end tests against the emulators only (never present in production builds).
 if (useEmulators) {
-  (window as unknown as Record<string, unknown>).__birgeTestSignIn = async (sub: string, name: string) => {
+  (window as unknown as Record<string, unknown>).__syncoraTestSignIn = async (sub: string, name: string) => {
     const { signInWithCredential } = await import('firebase/auth');
     const cred = GoogleAuthProvider.credential(JSON.stringify({ sub, email: `${sub}@example.com`, email_verified: true, name }));
     return signInWithCredential(auth, cred);

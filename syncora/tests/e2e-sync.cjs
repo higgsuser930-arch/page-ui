@@ -13,8 +13,8 @@ function ok(cond, msg) { if (!cond) { throw new Error('FAIL: ' + msg); } console
     page.on('pageerror', (e) => console.log(`[${name} pageerror]`, e.message));
     page.on('console', (m) => { if (m.type() === 'error') console.log(`[${name} console]`, m.text().slice(0, 200)); });
     await page.goto(BASE);
-    await page.waitForFunction(() => window.__birgeTestSignIn);
-    await page.evaluate(([s, n]) => window.__birgeTestSignIn(s, n), [sub, name]);
+    await page.waitForFunction(() => window.__syncoraTestSignIn);
+    await page.evaluate(([s, n]) => window.__syncoraTestSignIn(s, n), [sub, name]);
     await page.waitForSelector('.me-chip', { timeout: 15000 });
     return page;
   };

@@ -212,8 +212,10 @@ export function usePublicRooms() {
   const [list, setList] = useState<Room[] | null>(null);
   useEffect(
     () =>
-      onSnapshot(query(collection(db, 'rooms'), where('isPublic', '==', true), limit(50)), (s) =>
-        setList(s.docs.map((d) => withId<Room>(d)).sort((a, b) => ms(b.updatedAt) - ms(a.updatedAt))),
+      onSnapshot(
+        query(collection(db, 'rooms'), where('isPublic', '==', true), limit(50)),
+        (s) => setList(s.docs.map((d) => withId<Room>(d)).sort((a, b) => ms(b.updatedAt) - ms(a.updatedAt))),
+        () => setList([]),
       ),
     [],
   );

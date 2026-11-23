@@ -1,4 +1,4 @@
-# Birge — достарыңмен бірге фильм көр
+# SYNCORA — достарыңмен бірге фильм көр
 
 Онлайн «бірге көру» платформасы: 2–28 адам бір бөлмеге жиналып, админ қосқан фильмді **бір секундта** көреді, көріп отырып чатта талқылайды. Достар тізімі, жеке хат, @username, екі тіл (қазақша / English), тек Google арқылы тіркелу.
 
@@ -22,15 +22,15 @@
 
 ## 1. Firebase жобасын ашу (бір рет, ~10 минут)
 
-1. https://console.firebase.google.com → **Add project** → атауы, мысалы `birge`.
+1. https://console.firebase.google.com → **Add project** → атауы, мысалы `syncora`.
 2. **Build → Authentication → Get started → Sign-in method → Google → Enable** → қолдау көрсету email-ін таңда → Save.
 3. **Build → Firestore Database → Create database** → *Production mode* → орналасқан жері: `europe-west` (Қазақстанға жақын).
-4. **Project settings (⚙) → Your apps → Web (`</>`)** → қосымша атауы `birge` → **Register**. Көрсетілген `firebaseConfig` мәндерін көшір.
+4. **Project settings (⚙) → Your apps → Web (`</>`)** → қосымша атауы `syncora` → **Register**. Көрсетілген `firebaseConfig` мәндерін көшір.
 5. Осы папкада `.env.example` файлын `.env` деп көшіріп, мәндерді толтыр:
    ```
    VITE_FIREBASE_API_KEY=...
-   VITE_FIREBASE_AUTH_DOMAIN=birge-xxxx.firebaseapp.com
-   VITE_FIREBASE_PROJECT_ID=birge-xxxx
+   VITE_FIREBASE_AUTH_DOMAIN=syncora-xxxx.firebaseapp.com
+   VITE_FIREBASE_PROJECT_ID=syncora-xxxx
    ...
    ```
 6. `.firebaserc.example` файлын `.firebaserc` деп көшіріп, ішіне project ID жаз.
@@ -40,7 +40,7 @@
 Node.js 20+ керек.
 
 ```bash
-cd birge
+cd syncora
 npm install
 npm run dev          # http://localhost:5173
 ```
@@ -54,13 +54,13 @@ npm run deploy       # build + Firestore ережелері + Hosting
 
 Сайт `https://<project-id>.web.app` мекенжайында ашылады.
 
-## 4. Жеке доменді қосу (мысалы `birge.kz`)
+## 4. Жеке доменді қосу (мысалы `syncora.kz`)
 
 1. **Домен сатып ал.** `.kz` домені Қазақстан тіркеушілері арқылы алынады (мысалы ps.kz, hoster.kz). `.com`/`.app` — Cloudflare, Namecheap, Porkbun.
-2. Firebase Console → **Hosting → Add custom domain** → `birge.kz` (және `www.birge.kz` → `birge.kz`-ке бағыттау).
+2. Firebase Console → **Hosting → Add custom domain** → `syncora.kz` (және `www.syncora.kz` → `syncora.kz`-ке бағыттау).
 3. Firebase көрсеткен **A** және **TXT** жазбаларын домен тіркеушісінің DNS панеліне қос. Тексеру бірнеше минуттан 24 сағатқа дейін созылады, SSL (https) сертификатын Firebase өзі береді.
-4. **Маңызды:** Authentication → **Settings → Authorized domains** → `birge.kz` және `www.birge.kz` қос. Әйтпесе Google арқылы кіру жұмыс істемейді.
-5. (Ұсыныс) Google кіру терезесінде `firebaseapp.com` емес, өз доменің көрінуі үшін `.env` ішінде `VITE_FIREBASE_AUTH_DOMAIN=birge.kz` қойып, қайта `npm run deploy` жаса.
+4. **Маңызды:** Authentication → **Settings → Authorized domains** → `syncora.kz` және `www.syncora.kz` қос. Әйтпесе Google арқылы кіру жұмыс істемейді.
+5. (Ұсыныс) Google кіру терезесінде `firebaseapp.com` емес, өз доменің көрінуі үшін `.env` ішінде `VITE_FIREBASE_AUTH_DOMAIN=syncora.kz` қойып, қайта `npm run deploy` жаса.
 
 ## 5. Тестілеу (Firebase жобасыз, локалды эмуляторлармен)
 

@@ -12,7 +12,7 @@ async function allowed(label, fn) { try { await fn(); pass(label); } catch (e) {
 async function denied(label, fn) { try { await fn(); fail(`${label} — was allowed!`); } catch (e) { e.code === 'permission-denied' ? pass(label) : fail(`${label} — ${e.code || e.message}`); } }
 
 async function user(name) {
-  const app = initializeApp({ apiKey: 'demo', projectId: 'demo-birge', appId: name }, name);
+  const app = initializeApp({ apiKey: 'demo', projectId: 'demo-syncora', appId: name }, name);
   const auth = getAuth(app);
   connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
   const db = getFirestore(app);

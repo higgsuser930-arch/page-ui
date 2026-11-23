@@ -10,8 +10,8 @@ function ok(c, m) { if (!c) throw new Error('FAIL: ' + m); console.log('  ✓ ' 
     const page = await (await br.newContext({ viewport: { width: 1300, height: 820 } })).newPage();
     page.on('pageerror', (e) => console.log('[pageerror]', e.message.slice(0, 200)));
     await page.goto(BASE);
-    await page.waitForFunction(() => window.__birgeTestSignIn);
-    await page.evaluate((s) => window.__birgeTestSignIn(s, s), sub);
+    await page.waitForFunction(() => window.__syncoraTestSignIn);
+    await page.evaluate((s) => window.__syncoraTestSignIn(s, s), sub);
     await page.waitForSelector('.me-chip');
     return page;
   };

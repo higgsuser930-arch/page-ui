@@ -111,8 +111,10 @@ input[type='range'] { width: 100%; }
 .avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
 .avatar .dot { position: absolute; right: -1px; bottom: -1px; width: 30%; height: 30%; min-width: 9px; min-height: 9px; border-radius: 50%; background: var(--ok); border: 2px solid var(--panel); }
 
-.logo { display: inline-flex; align-items: center; gap: 10px; color: #fff; }
-.logo b { font-size: 1.25rem; font-weight: 800; letter-spacing: -0.02em; }
+.logo { display: inline-flex; align-items: center; gap: 8px; color: #fff; }
+.logo img { display: block; }
+.logo-word { width: auto; }
+.logo-full { display: block; width: min(560px, 88vw); height: auto; margin: -10px auto 6px; filter: drop-shadow(0 0 40px rgba(124, 58, 237, 0.25)); }
 
 .lang-switch { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--bg-2); border: 1px solid var(--line-2); }
 .lang-switch button { border: 0; background: none; padding: 4px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 700; color: var(--muted); cursor: pointer; }
@@ -254,11 +256,12 @@ input[type='range'] { width: 100%; }
   .side { position: static; height: 520px; }
 }
 @media (max-width: 760px) {
-  .topbar { padding: 8px 12px; gap: 8px; }
+  .topbar { padding: 8px 12px; gap: 8px; backdrop-filter: none; background: rgba(11, 7, 18, 0.97); } /* backdrop-filter would trap the fixed bottom nav */
   .nav { position: fixed; bottom: 0; left: 0; right: 0; margin: 0; justify-content: space-around; padding: 6px 6px calc(6px + env(safe-area-inset-bottom)); background: rgba(11, 7, 18, 0.95); border-top: 1px solid var(--line); backdrop-filter: blur(14px); z-index: 30; }
   .nav a { flex-direction: column; gap: 2px; font-size: 0.7rem; padding: 6px 10px; }
   .nav a .badge { position: absolute; top: 0; right: 8px; }
   .me-name { display: none; }
+  .topbar .logo-word { display: none; }
   .me-chip { padding: 2px; }
   .main { padding-bottom: 70px; }
   .page { padding: 18px 14px 40px; }

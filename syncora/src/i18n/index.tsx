@@ -247,7 +247,7 @@ const I18nContext = createContext<Ctx | null>(null);
 
 function initialLang(): Lang {
   try {
-    const saved = localStorage.getItem('birge.lang');
+    const saved = localStorage.getItem('syncora.lang');
     if (saved === 'kk' || saved === 'en') return saved;
   } catch {
     /* storage unavailable */
@@ -260,7 +260,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const setLang = useCallback((l: Lang) => {
     setLangState(l);
     try {
-      localStorage.setItem('birge.lang', l);
+      localStorage.setItem('syncora.lang', l);
     } catch {
       /* ignore */
     }
