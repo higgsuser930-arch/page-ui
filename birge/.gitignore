@@ -5,3 +5,4 @@ dist
 .firebase
 *-debug.log
 public/test.webm
+*.tsbuildinfo
